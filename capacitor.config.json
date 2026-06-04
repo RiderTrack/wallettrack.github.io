@@ -1,0 +1,33 @@
+{
+  "appId": "com.wallettrack.app",
+  "appName": "WalletTrack",
+  "webDir": ".",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "Filesystem": {
+      "permissions": ["publicStorage"]
+    },
+    "Share": {},
+    "App": {},
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#6366f1",
+      "sound": "beep.wav"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#0f0f1a",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    }
+  }
+}
