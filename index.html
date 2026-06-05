@@ -554,6 +554,9 @@ document.addEventListener("DOMContentLoaded",function(){
                         <h2 class="text-4xl font-extrabold tracking-tight mt-1" id="balance-total">S/ 0.00</h2>
                     </div>
 
+                    <!-- Desglose por cuenta -->
+                    <div id="desglose-cuentas" class="mt-4 space-y-2">
+                    </div>
                     <div class="grid grid-cols-2 gap-4 mt-6 border-t border-slate-800/80 pt-4">
                         <div>
                             <span class="text-xs text-slate-400 block">Ingresos del Mes</span>
@@ -855,6 +858,11 @@ document.addEventListener("DOMContentLoaded",function(){
                 </div>
                 <button onclick="guardarSaldosIniciales()" class="mt-4 w-full py-3 rounded-xl accent-bg hover:opacity-95 text-white font-bold text-sm transition-all">
                     Guardar Saldos
+                </button>
+
+                <button onclick="resetTotal()" 
+                    style="margin-top:10px;width:100%;padding:12px;border-radius:14px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <span style="font-size:1rem;">🗑️</span> Reiniciar todo a cero
                 </button>
             </div>
 
@@ -1723,6 +1731,20 @@ document.addEventListener("DOMContentLoaded",function(){
             </div>
 
             <div class="space-y-4">
+                <!-- Nombre personalizado -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Nombre de la cuenta</label>
+                    <input type="text" id="edit-card-nombre" maxlength="20" placeholder="Ej: Mi BCP"
+                        style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 14px;color:#f1f5f9;font-size:0.88rem;outline:none;margin-bottom:0;">
+                </div>
+
+                <!-- Saldo inicial -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Saldo inicial (S/)</label>
+                    <input type="number" id="edit-card-saldo-ini" step="0.01" min="0" placeholder="0.00"
+                        style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 14px;color:#f1f5f9;font-size:0.88rem;outline:none;margin-bottom:0;">
+                </div>
+
                 <!-- Últimos 4 dígitos -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-1.5">Últimos 4 dígitos de tu tarjeta</label>
@@ -1834,14 +1856,7 @@ document.addEventListener("DOMContentLoaded",function(){
         ];
 
         // CONFIGURACIÓN DE BASE DE DATOS INICIAL (LOCAL STORAGE)
-        const DEFAULT_TRANSACTIONS = [
-            { id: "1", date: "2026-05-01", type: "income",  category: "Trabajo",      amount: 2000.00, description: "Salario Neto Mensual",               account: "bcp"      },
-            { id: "2", date: "2026-05-03", type: "income",  category: "RiderTrack",   amount: 450.00,  description: "RiderTrack — Rutas Delivery Semanales", account: "yape"   },
-            { id: "3", date: "2026-05-05", type: "expense", category: "Hogar",        amount: 1000.00, description: "Alquiler de Renta",                    account: "bcp"      },
-            { id: "4", date: "2026-05-10", type: "expense", category: "Alimentación", amount: 400.00,  description: "Supermercado Mensual",                 account: "yape"     },
-            { id: "5", date: "2026-05-12", type: "expense", category: "Combustible",  amount: 80.00,   description: "Combustible de Moto",                  account: "efectivo" },
-            { id: "6", date: "2026-05-14", type: "expense", category: "Gimnasio",     amount: 150.00,  description: "Membresía FitTrack",                   account: "bcp"      }
-        ];
+        const DEFAULT_TRANSACTIONS = [];
 
         const DEFAULT_METAS = [
             { id: "m1", name: "Fondo de Emergencia", target: 5000, current: 1500, date: "2026-12-31" },
@@ -1862,7 +1877,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         // ── SALDOS INICIALES POR CUENTA (cuánto tenías al empezar) ─────────
         const DEFAULT_SALDOS_INICIALES = {
-            bcp: 1200, interbank: 0, bbva: 0, yape: 350, plin: 0, efectivo: 200
+            bcp: 0, interbank: 0, bbva: 0, yape: 0, plin: 0, efectivo: 0
         };
 
         // Estado Global
@@ -2019,14 +2034,16 @@ document.addEventListener("DOMContentLoaded",function(){
 
         // MÓDULO 1 & 2: RECONSTRUCCIÓN DE DASHBOARD & DISPONIBLE REAL
         function refreshAllUI() {
-            // --- BALANCE HISTÓRICO TOTAL (acumulado de siempre) ---
+            // --- BALANCE REAL = SaldosIniciales + movimientos históricos ---
+            let totalSaldosIniciales = 0;
+            Object.values(AppState.saldosIniciales || {}).forEach(v => totalSaldosIniciales += parseFloat(v) || 0);
             let ingresosHistorico = 0;
             let gastosHistorico = 0;
             AppState.transactions.forEach(t => {
                 if (t.type === "income") ingresosHistorico += parseFloat(t.amount);
                 else gastosHistorico += parseFloat(t.amount);
             });
-            const balanceReal = ingresosHistorico - gastosHistorico;
+            const balanceReal = totalSaldosIniciales + ingresosHistorico - gastosHistorico;
 
             // --- INGRESOS & GASTOS SOLO DEL MES ACTUAL ---
             const ahora = new Date();
@@ -2050,6 +2067,22 @@ document.addEventListener("DOMContentLoaded",function(){
             const disponibleReal = saldoMes - totalSuscripciones;
 
             document.getElementById("balance-total").innerText = `S/ ${balanceReal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
+            // --- DESGLOSE POR CUENTA ---
+            const desgloseEl = document.getElementById("desglose-cuentas");
+            if (desgloseEl) {
+                let desHtml = '<p style="font-size:0.65rem;font-weight:800;letter-spacing:0.08em;color:var(--color-muted,#94a3b8);text-transform:uppercase;margin-bottom:6px;">Saldo por cuenta</p>';
+                CUENTAS_CATALOG.forEach(c => {
+                    const s = getSaldoCuenta(c.id);
+                    const neg = s < 0;
+                    const sStr = (neg?'-':'')+'S/ '+Math.abs(s).toLocaleString('es-PE',{minimumFractionDigits:2});
+                    desHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.04);margin-bottom:4px;">';
+                    desHtml += '<span style="font-size:0.78rem;color:var(--color-muted,#94a3b8);">'+c.icon+' '+c.name+'</span>';
+                    desHtml += '<span style="font-size:0.78rem;font-weight:700;color:'+(neg?'#ef4444':'#22c55e')+';">'+sStr+'</span>';
+                    desHtml += '</div>';
+                });
+                desgloseEl.innerHTML = desHtml;
+            }
+
             document.getElementById("ingresos-mes").innerText = `S/ ${ingresosMes.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
             document.getElementById("gastos-mes").innerText = `S/ ${gastosMes.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
             document.getElementById("total-fijos").innerText = `S/ ${totalSuscripciones.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
@@ -2750,6 +2783,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 const saldo    = getSaldoCuenta(cuenta.id);
                 totalConsolidado += saldo;
                 const custom   = AppState.cardCustom[cuenta.id] || {};
+                const cuentaNombre = custom.nombre || cuenta.name;
                 const design   = CUENTA_DESIGNS[cuenta.id] || CUENTA_DESIGNS.efectivo;
                 const isWallet = cuenta.id === 'yape' || cuenta.id === 'plin';
 
@@ -2892,6 +2926,12 @@ document.addEventListener("DOMContentLoaded",function(){
             document.getElementById("edit-card-title").innerText   = `Editar ${cuenta.name}`;
             document.getElementById("edit-card-id").value          = accountId;
             document.getElementById("edit-card-last4").value       = custom.last4    || '';
+            // Cargar saldo inicial actual
+            const saldoIniEl = document.getElementById("edit-card-saldo-ini");
+            if (saldoIniEl) saldoIniEl.value = AppState.saldosIniciales[accountId] || 0;
+            // Cargar nombre personalizado
+            const nomEl = document.getElementById("edit-card-nombre");
+            if (nomEl) nomEl.value = custom.nombre || cuenta.name;
             document.getElementById("edit-card-grad-from").value   = custom.gradFrom || defaultFrom;
             document.getElementById("edit-card-grad-to").value     = custom.gradTo   || defaultTo;
             updateEditCardPreview();
@@ -2922,7 +2962,13 @@ document.addEventListener("DOMContentLoaded",function(){
             const from  = document.getElementById("edit-card-grad-from").value;
             const to    = document.getElementById("edit-card-grad-to").value;
 
-            AppState.cardCustom[id] = { last4, gradFrom: from, gradTo: to };
+            // Guardar saldo inicial si cambió
+            const saldoIniEl = document.getElementById("edit-card-saldo-ini");
+            if (saldoIniEl) AppState.saldosIniciales[id] = parseFloat(saldoIniEl.value) || 0;
+            // Guardar nombre personalizado
+            const nomEl = document.getElementById("edit-card-nombre");
+            const nomVal = nomEl ? nomEl.value.trim() : '';
+            AppState.cardCustom[id] = { last4, gradFrom: from, gradTo: to, nombre: nomVal || undefined };
             saveState();
             closeModal('modal-editar-tarjeta');
         }
@@ -2941,6 +2987,28 @@ document.addEventListener("DOMContentLoaded",function(){
                     </div>
                 `;
             });
+        }
+
+        function resetTotal() {
+            if (!confirm('¿Seguro? Esto borrará TODAS las transacciones, saldos y datos. No se puede deshacer.')) return;
+            const keys = [
+                'wallettrack_transactions','wallettrack_goals','wallettrack_subscriptions',
+                'wallettrack_challenges','wallettrack_saldos','wallettrack_budgets',
+                'wallettrack_cardcustom'
+            ];
+            keys.forEach(k => localStorage.removeItem(k));
+            AppState.transactions = [];
+            AppState.goals = [];
+            AppState.subscriptions = [];
+            AppState.challenges = [];
+            AppState.saldosIniciales = { bcp:0, interbank:0, bbva:0, yape:0, plin:0, efectivo:0 };
+            AppState.cardCustom = {};
+            AppState.budgets = [];
+            saveState();
+            refreshAllUI();
+            renderCuentas();
+            renderSaldosForm();
+            toast('✅ Todo reiniciado a cero', 'success');
         }
 
         function guardarSaldosIniciales() {
