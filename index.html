@@ -2334,30 +2334,52 @@ document.addEventListener("DOMContentLoaded",function(){
 
         // MÓDULO 6: DASHBOARD INTELIGENTE (CHART.JS)
         function updateCharts() {
-            if (typeof Chart === 'undefined') return; // Chart.js no cargó aún
-            const ctx = document.getElementById("chart-gastos").getContext("2d");
-            
+            if (typeof Chart === 'undefined') return;
+            const canvasEl = document.getElementById("chart-gastos");
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext("2d");
+
             if (chartGastos) {
                 chartGastos.destroy();
+                chartGastos = null;
             }
 
-            // Agrupar por categorías
+            // Filtrar solo gastos del mes actual
+            const ahora = new Date();
+            const mesActual = ahora.getFullYear() + '-' + String(ahora.getMonth()+1).padStart(2,'0');
+
             const categoriesMap = {};
             AppState.transactions.forEach(t => {
                 if (t.type === "expense") {
-                    categoriesMap[t.category] = (categoriesMap[t.category] || 0) + parseFloat(t.amount);
+                    const mesTx = (t.date || '').substring(0, 7);
+                    if (mesTx === mesActual) {
+                        const cat = t.category || 'Sin categoría';
+                        categoriesMap[cat] = (categoriesMap[cat] || 0) + parseFloat(t.amount || 0);
+                    }
                 }
             });
 
-            const labels = Object.keys(categoriesMap);
-            const data = Object.values(categoriesMap);
-
-            if(labels.length === 0) {
-                labels.push("Sin Gastos");
-                data.push(0);
+            // Ordenar de mayor a menor y tomar top 8 + "Otros"
+            const sorted = Object.entries(categoriesMap).sort((a, b) => b[1] - a[1]);
+            let labels = [], data = [];
+            if (sorted.length === 0) {
+                labels = ['Sin gastos este mes'];
+                data   = [1];
+            } else if (sorted.length <= 8) {
+                labels = sorted.map(e => e[0]);
+                data   = sorted.map(e => e[1]);
+            } else {
+                const top = sorted.slice(0, 7);
+                const resto = sorted.slice(7).reduce((s, e) => s + e[1], 0);
+                labels = [...top.map(e => e[0]), 'Otros'];
+                data   = [...top.map(e => e[1]), resto];
             }
 
-            const accentColor = AppState.theme.accent;
+            const COLORS = [
+                '#10b981','#3b82f6','#f59e0b','#ec4899','#a855f7',
+                '#f43f5e','#06b6d4','#84cc16','#64748b','#e2e8f0'
+            ];
+            const totalMes = data.reduce((s, v) => s + v, 0);
 
             chartGastos = new Chart(ctx, {
                 type: 'doughnut',
@@ -2365,11 +2387,9 @@ document.addEventListener("DOMContentLoaded",function(){
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: [
-                            '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#a855f7',
-                            '#f43f5e', '#06b6d4', '#84cc16', '#e2e8f0', '#64748b'
-                        ],
-                        borderWidth: 0,
+                        backgroundColor: COLORS.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
                     }]
                 },
                 options: {
@@ -2380,13 +2400,37 @@ document.addEventListener("DOMContentLoaded",function(){
                             position: 'bottom',
                             labels: {
                                 color: '#94a3b8',
-                                font: { family: 'Inter', size: 10, weight: '500' },
-                                boxWidth: 10,
-                                padding: 15
+                                font: { family: 'Inter', size: 11, weight: '500' },
+                                boxWidth: 12,
+                                padding: 12,
+                                generateLabels: function(chart) {
+                                    const ds = chart.data.datasets[0];
+                                    return chart.data.labels.map(function(label, i) {
+                                        const val = ds.data[i];
+                                        const pct = totalMes > 0 ? Math.round(val / totalMes * 100) : 0;
+                                        return {
+                                            text: label + '  S/' + val.toFixed(0) + ' (' + pct + '%)',
+                                            fillStyle: ds.backgroundColor[i],
+                                            strokeStyle: ds.backgroundColor[i],
+                                            lineWidth: 0,
+                                            index: i,
+                                            hidden: false
+                                        };
+                                    });
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var val = context.parsed;
+                                    var pct = totalMes > 0 ? (val / totalMes * 100).toFixed(1) : 0;
+                                    return ' S/' + val.toFixed(2) + ' — ' + pct + '%';
+                                }
                             }
                         }
                     },
-                    cutout: '70%'
+                    cutout: '68%'
                 }
             });
         }
@@ -3707,11 +3751,9 @@ document.addEventListener("DOMContentLoaded",function(){
 
             // ═══════════════════════════════════════════════════════════
             // EXPORTAR — Capacitor: Filesystem+Share | Chrome: objectURL
-            // Creamos el anchor ANTES del async para preservar user-gesture
             // ═══════════════════════════════════════════════════════════
             var fecha = new Date().toISOString().split('T')[0];
             var nom   = 'WalletTrack_'+fecha+'.xlsx';
-            // Anchor pre-creado (solo útil en Chrome, Capacitor lo ignora)
             var _anchor = document.createElement('a');
             _anchor.style.display = 'none';
             document.body.appendChild(_anchor);
@@ -3899,7 +3941,6 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         // ── Descarga directa Chrome/browser ─────────────────────────────
-        // anchorEl: anchor pre-creado antes del async (preserva user-gesture)
         function _dlBlobChrome(blob, nom, anchorEl) {
             try {
                 var url = URL.createObjectURL(blob);
@@ -3913,7 +3954,6 @@ document.addEventListener("DOMContentLoaded",function(){
                     URL.revokeObjectURL(url);
                 }, 1500);
             } catch(e) {
-                // Fallback base64
                 var reader = new FileReader();
                 reader.onloadend = function() {
                     var a2 = anchorEl || document.createElement('a');
@@ -3927,7 +3967,6 @@ document.addEventListener("DOMContentLoaded",function(){
             }
         }
 
-        // ── base64 desde blob (para Capacitor Filesystem) ────────────────
         function blobToBase64(blob) {
             return new Promise(function(resolve, reject) {
                 var r = new FileReader();
@@ -3937,8 +3976,6 @@ document.addEventListener("DOMContentLoaded",function(){
             });
         }
 
-        // ── Compartir unificado: Capacitor → descarga Chrome ─────────────
-        // anchorEl opcional: anchor pre-creado antes del async para Chrome
         async function compartirArchivo(blob, nom, titulo, anchorEl) {
             var enCapacitor = (
                 typeof window.Capacitor !== 'undefined' &&
@@ -3970,7 +4007,6 @@ document.addEventListener("DOMContentLoaded",function(){
                 }
             }
 
-            // Chrome / browser — usa anchor pre-creado si viene, si no crea uno nuevo
             _dlBlobChrome(blob, nom, anchorEl || null);
         }
 
