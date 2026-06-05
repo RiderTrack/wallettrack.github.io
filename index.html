@@ -3713,11 +3713,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 var fecha = new Date().toISOString().split('T')[0];
                 var nom = 'WalletTrack_'+fecha+'.xlsx';
                 var file = new File([blob], nom, {type:blob.type});
-                if (navigator.canShare && navigator.canShare({files:[file]})) {
-                    navigator.share({files:[file], title:'WalletTrack Excel'}).catch(function(){ _dlBlob(blob, nom); });
-                } else {
-                    _dlBlob(blob, nom);
-                }
+                compartirArchivo(blob, nom, 'WalletTrack Excel');
                 if (typeof toast==='function') toast('✅ Excel listo — abriendo...', 'success');
             }).catch(function(e){
                 alert('Error generando Excel: '+e.message);
@@ -3839,12 +3835,7 @@ document.addEventListener("DOMContentLoaded",function(){
             const pdfNom = 'WalletTrack_Reporte_' + mesActual + '.pdf';
             const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
             const pdfFile = new File([pdfBlob], pdfNom, { type: 'application/pdf' });
-            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                navigator.share({ files: [pdfFile], title: 'WalletTrack PDF' })
-                    .catch(() => _dlBlob(pdfBlob, pdfNom));
-            } else {
-                _dlBlob(pdfBlob, pdfNom);
-            }
+            compartirArchivo(pdfBlob, pdfNom, 'WalletTrack PDF');
             if (typeof toast === 'function') toast('✅ PDF listo para compartir', 'success');
         }
 
@@ -3864,12 +3855,7 @@ document.addEventListener("DOMContentLoaded",function(){
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
             const nom = 'WalletTrack_Backup_' + new Date().toISOString().split('T')[0] + '.json';
-            const file = new File([blob], nom, {type: blob.type});
-            if (navigator.canShare && navigator.canShare({files:[file]})) {
-                navigator.share({files:[file], title:'WalletTrack Backup'}).catch(() => _dlBlob(blob, nom));
-            } else {
-                _dlBlob(blob, nom);
-            }
+            compartirArchivo(blob, nom, 'WalletTrack Backup');
         }
 
 
@@ -3907,13 +3893,37 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function _dlBlob(blob, nom) {
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = nom;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
+            var reader = new FileReader();
+            reader.onloadend = function() {
+                var base64 = reader.result;
+                // Intentar abrir como data URI (funciona en WebView Android)
+                var a = document.createElement('a');
+                a.href = base64;
+                a.download = nom;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                // Fallback adicional: abrir en nueva ventana
+                setTimeout(function() {
+                    try { window.open(base64, '_blank'); } catch(e) {}
+                }, 500);
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        // Función unificada de descarga/compartir para APK y Chrome
+        function compartirArchivo(blob, nom, titulo) {
+            // 1. Intentar navigator.share con archivo (Chrome Android moderno)
+            try {
+                var file = new File([blob], nom, {type: blob.type});
+                if (navigator.canShare && navigator.canShare({files:[file]})) {
+                    navigator.share({files:[file], title: titulo||nom})
+                        .catch(function() { _dlBlob(blob, nom); });
+                    return;
+                }
+            } catch(e) {}
+            // 2. Fallback: descarga directa via base64
+            _dlBlob(blob, nom);
         }
 
         function exportCSV() {
@@ -3929,12 +3939,7 @@ document.addEventListener("DOMContentLoaded",function(){
             const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
             const csvNom = 'WalletTrack_' + new Date().toISOString().split('T')[0] + '.csv';
             const csvFile = new File([blob], csvNom, { type: blob.type });
-            if (navigator.canShare && navigator.canShare({ files: [csvFile] })) {
-                navigator.share({ files: [csvFile], title: 'WalletTrack CSV' })
-                    .catch(() => _dlBlob(blob, csvNom));
-            } else {
-                _dlBlob(blob, csvNom);
-            }
+            compartirArchivo(blob, csvNom, 'WalletTrack CSV');
         }
 
         // MÓDULO 12: SISTEMA DE LOGROS FINANCIEROS
