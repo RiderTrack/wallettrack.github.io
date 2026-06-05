@@ -3706,16 +3706,22 @@ document.addEventListener("DOMContentLoaded",function(){
             });
 
             // ═══════════════════════════════════════════════════════════
-            // EXPORTAR — share en APK, download en Chrome
+            // EXPORTAR — Capacitor: Filesystem+Share | Chrome: objectURL
+            // Creamos el anchor ANTES del async para preservar user-gesture
             // ═══════════════════════════════════════════════════════════
+            var fecha = new Date().toISOString().split('T')[0];
+            var nom   = 'WalletTrack_'+fecha+'.xlsx';
+            // Anchor pre-creado (solo útil en Chrome, Capacitor lo ignora)
+            var _anchor = document.createElement('a');
+            _anchor.style.display = 'none';
+            document.body.appendChild(_anchor);
+
             wb.xlsx.writeBuffer().then(function(buf) {
                 var blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-                var fecha = new Date().toISOString().split('T')[0];
-                var nom = 'WalletTrack_'+fecha+'.xlsx';
-                var file = new File([blob], nom, {type:blob.type});
-                compartirArchivo(blob, nom, 'WalletTrack Excel');
-                if (typeof toast==='function') toast('✅ Excel listo — abriendo...', 'success');
+                if (typeof toast==='function') toast('✅ Excel generado, abriendo...', 'success');
+                compartirArchivo(blob, nom, 'WalletTrack Excel', _anchor);
             }).catch(function(e){
+                document.body.removeChild(_anchor);
                 alert('Error generando Excel: '+e.message);
             });
         }
@@ -3892,73 +3898,80 @@ document.addEventListener("DOMContentLoaded",function(){
             reader.readAsText(file);
         }
 
-        // ── Helpers base64 ────────────────────────────────────────────────
-        function blobToBase64(blob) {
-            return new Promise(function(resolve, reject) {
+        // ── Descarga directa Chrome/browser ─────────────────────────────
+        // anchorEl: anchor pre-creado antes del async (preserva user-gesture)
+        function _dlBlobChrome(blob, nom, anchorEl) {
+            try {
+                var url = URL.createObjectURL(blob);
+                var a = anchorEl || document.createElement('a');
+                a.href = url;
+                a.download = nom;
+                if (!anchorEl) { a.style.display = 'none'; document.body.appendChild(a); }
+                a.click();
+                setTimeout(function() {
+                    if (!anchorEl) document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 1500);
+            } catch(e) {
+                // Fallback base64
                 var reader = new FileReader();
                 reader.onloadend = function() {
-                    // Quitar el prefijo "data:...;base64,"
-                    var b64 = reader.result.split(',')[1];
-                    resolve(b64);
+                    var a2 = anchorEl || document.createElement('a');
+                    a2.href = reader.result;
+                    a2.download = nom;
+                    if (!anchorEl) { document.body.appendChild(a2); }
+                    a2.click();
+                    if (!anchorEl) setTimeout(function(){ document.body.removeChild(a2); }, 1000);
                 };
-                reader.onerror = reject;
                 reader.readAsDataURL(blob);
+            }
+        }
+
+        // ── base64 desde blob (para Capacitor Filesystem) ────────────────
+        function blobToBase64(blob) {
+            return new Promise(function(resolve, reject) {
+                var r = new FileReader();
+                r.onloadend = function() { resolve(r.result.split(',')[1]); };
+                r.onerror = reject;
+                r.readAsDataURL(blob);
             });
         }
 
-        // ── Descarga Chrome (browser puro) ───────────────────────────────
-        function _dlBlobChrome(blob, nom) {
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = nom;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
-        }
-
-        // ── Compartir/guardar unificado: Capacitor primero, Chrome fallback ──
-        async function compartirArchivo(blob, nom, titulo) {
-            // ¿Estamos en Capacitor?
-            var enCapacitor = (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        // ── Compartir unificado: Capacitor → descarga Chrome ─────────────
+        // anchorEl opcional: anchor pre-creado antes del async para Chrome
+        async function compartirArchivo(blob, nom, titulo, anchorEl) {
+            var enCapacitor = (
+                typeof window.Capacitor !== 'undefined' &&
+                typeof window.Capacitor.isNativePlatform === 'function' &&
+                window.Capacitor.isNativePlatform()
+            );
 
             if (enCapacitor) {
+                if (anchorEl && anchorEl.parentNode) anchorEl.parentNode.removeChild(anchorEl);
                 try {
-                    var { Filesystem, Share } = window.Capacitor.Plugins;
+                    var Filesystem = window.Capacitor.Plugins.Filesystem;
+                    var Share      = window.Capacitor.Plugins.Share;
                     var b64 = await blobToBase64(blob);
-
-                    // 1. Escribir al directorio de Cache (no necesita permisos extra)
                     var writeResult = await Filesystem.writeFile({
                         path: nom,
                         data: b64,
                         directory: 'CACHE',
                         recursive: true
                     });
-
-                    // 2. Abrir Share Sheet nativo con la URI del archivo
                     await Share.share({
                         title: titulo || nom,
-                        url: writeResult.uri,
+                        url:   writeResult.uri,
                         dialogTitle: titulo || nom
                     });
                     return;
                 } catch(e) {
-                    console.warn('Capacitor share falló, intentando fallback:', e);
-                    // Si Share falla (usuario canceló, etc.) no mostrar error
-                    if (e && e.message && e.message.toLowerCase().includes('cancel')) return;
+                    if (e && e.message && /cancel/i.test(e.message)) return;
+                    console.warn('Capacitor share error:', e);
                 }
             }
 
-            // Fallback: Chrome / browser normal
-            try {
-                var file = new File([blob], nom, {type: blob.type});
-                if (navigator.canShare && navigator.canShare({files:[file]})) {
-                    navigator.share({files:[file], title: titulo||nom}).catch(function(){});
-                    return;
-                }
-            } catch(e) {}
-            _dlBlobChrome(blob, nom);
+            // Chrome / browser — usa anchor pre-creado si viene, si no crea uno nuevo
+            _dlBlobChrome(blob, nom, anchorEl || null);
         }
 
         function exportCSV() {
