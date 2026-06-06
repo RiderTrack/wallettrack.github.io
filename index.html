@@ -120,6 +120,21 @@
             padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
         }
 
+        /* ── Sobres ───────────────────────────────────────────────────── */
+        .sobre-color-opt {
+            width:28px;height:28px;border-radius:50%;cursor:pointer;
+            border:3px solid transparent;transition:transform .15s,border-color .15s;
+        }
+        .sobre-color-opt:hover, .sobre-color-opt.selected { transform:scale(1.2); border-color:#fff; }
+
+        /* ── Emoji picker ─────────────────────────────────────────────── */
+        .emoji-opt {
+            display:inline-flex;align-items:center;justify-content:center;
+            width:36px;height:36px;border-radius:8px;font-size:20px;cursor:pointer;
+            background:rgba(255,255,255,0.05);transition:background .15s;
+        }
+        .emoji-opt:hover { background:rgba(255,255,255,0.15); }
+
         /* ── Nav activo ───────────────────────────────────────────────── */
         .nav-active { color: var(--accent) !important; position: relative; }
         .nav-active::after {
@@ -544,6 +559,21 @@ document.addEventListener("DOMContentLoaded",function(){
         <!-- ACTIVE VIEW CONTAINER (DYNAMIC VIEWS) -->
         <div id="view-dashboard" class="app-view space-y-6">
             
+            <!-- TARJETA FONDO EMPRESA -->
+            <div id="card-fondo-empresa" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.06));border:1px solid rgba(251,191,36,0.25);border-radius:20px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div style="font-size:24px">🏢</div>
+                    <div>
+                        <div style="font-size:10px;font-weight:700;color:#fbbf24;letter-spacing:.5px;text-transform:uppercase">Fondo Empresa (no es tuyo)</div>
+                        <div style="font-size:20px;font-weight:800;color:#fde68a;line-height:1.1" id="fondo-empresa-total">S/ 0.00</div>
+                        <div style="font-size:10px;color:rgba(251,191,36,0.6);margin-top:2px">Dinero recaudado pendiente de entrega</div>
+                    </div>
+                </div>
+                <button onclick="openFondoEmpresa()" style="background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.35);border-radius:12px;padding:8px 14px;color:#fbbf24;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">
+                    + Agregar
+                </button>
+            </div>
+
             <!-- SECCIÓN 1: BALANCE GENERAL & DISPONIBLE REAL -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Tarjeta Principal de Balance Premium -->
@@ -626,6 +656,9 @@ document.addEventListener("DOMContentLoaded",function(){
                         </button>
                         <button onclick="openModal('modal-gasto')" class="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm flex items-center justify-center transition-all border border-slate-700/60">
                             <i data-lucide="minus-circle" class="w-4 h-4 mr-2"></i> Registrar Gasto
+                        </button>
+                        <button onclick="openFondoEmpresa()" style="flex:1;padding:12px 10px;border-radius:12px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+                            🏢 Fondo Empresa
                         </button>
                     </div>
                 </div>
@@ -794,9 +827,31 @@ document.addEventListener("DOMContentLoaded",function(){
 
                 <!-- Formulario nueva categoría -->
                 <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px;margin-bottom:14px;">
+                    <!-- Emoji picker -->
+                    <div style="margin-bottom:10px">
+                        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">Ícono</div>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div id="cat-emoji-preview" style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;flex-shrink:0" onclick="toggleEmojiPicker()">📦</div>
+                            <div style="flex:1">
+                                <div style="font-size:10px;color:#475569;margin-bottom:4px">Elige un ícono de la lista o escribe el tuyo:</div>
+                                <input type="text" id="nueva-cat-emoji" placeholder="📦" maxlength="2"
+                                    oninput="document.getElementById('cat-emoji-preview').textContent=this.value||'📦'"
+                                    style="width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:8px;color:#f1f5f9;font-size:1.1rem;text-align:center;outline:none;">
+                            </div>
+                        </div>
+                        <!-- Grilla de emojis -->
+                        <div id="emoji-picker-grid" style="display:none;margin-top:10px;background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:10px">
+                            <div style="font-size:9px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Gastos</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+                                <span onclick="selectEmoji('🍔')" class="emoji-opt">🍔</span><span onclick="selectEmoji('🥗')" class="emoji-opt">🥗</span><span onclick="selectEmoji('☕')" class="emoji-opt">☕</span><span onclick="selectEmoji('🛒')" class="emoji-opt">🛒</span><span onclick="selectEmoji('⛽')" class="emoji-opt">⛽</span><span onclick="selectEmoji('🚌')" class="emoji-opt">🚌</span><span onclick="selectEmoji('🏠')" class="emoji-opt">🏠</span><span onclick="selectEmoji('💊')" class="emoji-opt">💊</span><span onclick="selectEmoji('👕')" class="emoji-opt">👕</span><span onclick="selectEmoji('📱')" class="emoji-opt">📱</span><span onclick="selectEmoji('🎮')" class="emoji-opt">🎮</span><span onclick="selectEmoji('🎬')" class="emoji-opt">🎬</span><span onclick="selectEmoji('💪')" class="emoji-opt">💪</span><span onclick="selectEmoji('🔧')" class="emoji-opt">🔧</span><span onclick="selectEmoji('🏍️')" class="emoji-opt">🏍️</span><span onclick="selectEmoji('🛵')" class="emoji-opt">🛵</span><span onclick="selectEmoji('🚿')" class="emoji-opt">🚿</span><span onclick="selectEmoji('💈')" class="emoji-opt">💈</span><span onclick="selectEmoji('🐾')" class="emoji-opt">🐾</span><span onclick="selectEmoji('🎓')" class="emoji-opt">🎓</span>
+                            </div>
+                            <div style="font-size:9px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Ingresos</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px">
+                                <span onclick="selectEmoji('💰')" class="emoji-opt">💰</span><span onclick="selectEmoji('💵')" class="emoji-opt">💵</span><span onclick="selectEmoji('🏦')" class="emoji-opt">🏦</span><span onclick="selectEmoji('📲')" class="emoji-opt">📲</span><span onclick="selectEmoji('🤝')" class="emoji-opt">🤝</span><span onclick="selectEmoji('🎁')" class="emoji-opt">🎁</span><span onclick="selectEmoji('📦')" class="emoji-opt">📦</span><span onclick="selectEmoji('🚴')" class="emoji-opt">🚴</span><span onclick="selectEmoji('💼')" class="emoji-opt">💼</span><span onclick="selectEmoji('⭐')" class="emoji-opt">⭐</span><span onclick="selectEmoji('🏆')" class="emoji-opt">🏆</span><span onclick="selectEmoji('💎')" class="emoji-opt">💎</span><span onclick="selectEmoji('🔑')" class="emoji-opt">🔑</span><span onclick="selectEmoji('🌟')" class="emoji-opt">🌟</span><span onclick="selectEmoji('🎯')" class="emoji-opt">🎯</span><span onclick="selectEmoji('📈')" class="emoji-opt">📈</span>
+                            </div>
+                        </div>
+                    </div>
                     <div style="display:flex;gap:8px;margin-bottom:10px;">
-                        <input type="text" id="nueva-cat-emoji" placeholder="🔧" maxlength="2"
-                            style="width:56px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px;color:#f1f5f9;font-size:1.1rem;text-align:center;outline:none;">
                         <input type="text" id="nueva-cat-nombre" placeholder="Nombre de la categoría..."
                             style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:0.85rem;outline:none;">
                     </div>
@@ -1136,6 +1191,51 @@ document.addEventListener("DOMContentLoaded",function(){
 
         <!-- VISTA CONFIGURACIÓN / INTEGACIÓN (MÓDULO 20 - INTEGRACIONES & MÓDULO 16/17) -->
         <div id="view-configuracion" class="app-view hidden space-y-6">
+
+            <!-- ── COBRO DEL VIERNES ─────────────────────────── -->
+            <div class="premium-glass rounded-3xl p-6 custom-shadow" style="border-left:4px solid #a78bfa">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                    <span style="font-size:22px">💸</span>
+                    <h3 style="font-size:15px;font-weight:800;color:#f1f5f9">Mi Cobro Semanal (Viernes)</h3>
+                </div>
+                <p style="font-size:11px;color:#94a3b8;margin-bottom:16px">Registra tu sueldo semanal de S/ 583.30. Se añadirá como ingreso tuyo en la cuenta que elijas.</p>
+
+                <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);border-radius:14px;padding:14px;margin-bottom:14px">
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                        <div>
+                            <div style="font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:.5px;text-transform:uppercase">Monto configurado</div>
+                            <input type="number" id="cobro-viernes-monto" step="0.01" inputmode="decimal" value="583.30"
+                                style="background:transparent;border:none;color:#c4b5fd;font-size:22px;font-weight:800;outline:none;width:140px">
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">A cuenta</div>
+                            <select id="cobro-viernes-cuenta" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:8px 12px;color:#f1f5f9;font-size:13px;outline:none">
+                                <option value="yape">📲 Yape</option>
+                                <option value="bcp">🏦 BCP</option>
+                                <option value="interbank">🏦 Interbank</option>
+                                <option value="bbva">🏦 BBVA</option>
+                                <option value="plin">📲 Plin</option>
+                                <option value="efectivo">💵 Efectivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <button onclick="registrarCobroViernes()"
+                        style="padding:14px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+                        💰 Cobrar Ahora
+                    </button>
+                    <button onclick="registrarCobroViernes(true)"
+                        style="padding:14px;border-radius:14px;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.25);color:#a78bfa;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+                        📅 Fecha Manual
+                    </button>
+                </div>
+
+                <div id="cobro-viernes-historial" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto">
+                    <!-- inyectado -->
+                </div>
+            </div>
             <!-- Sincronización Avanzada -->
             <div class="premium-glass rounded-3xl p-6 custom-shadow">
                 <h3 class="text-lg font-bold mb-4 flex items-center">
@@ -1207,9 +1307,98 @@ document.addEventListener("DOMContentLoaded",function(){
             </div>
         </div>
 
-    </main>
-
     <!-- ACCIONES RÁPIDAS MODALES -->
+    <!-- Modal Fondo Empresa -->
+    <div id="modal-fondo-empresa" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-amber-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;color:#fde68a">🏢 Fondo Empresa</h3>
+                    <p style="font-size:11px;color:#94a3b8;margin-top:2px">Este dinero no es tuyo — no afecta tu balance personal</p>
+                </div>
+                <button onclick="closeModal('modal-fondo-empresa');document.body.style.overflow=''" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+
+            <!-- Saldo actual del fondo -->
+            <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                    <div style="font-size:10px;color:#fbbf24;font-weight:700;letter-spacing:.5px;text-transform:uppercase">Fondo acumulado actual</div>
+                    <div style="font-size:22px;font-weight:800;color:#fde68a" id="fondo-empresa-modal-total">S/ 0.00</div>
+                </div>
+                <span style="font-size:28px">💼</span>
+            </div>
+
+            <!-- Registrar recaudación -->
+            <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px;margin-bottom:12px">
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px">📥 Registrar Recaudación del Día</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto recaudado (S/)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="fondo-monto" placeholder="0.00"
+                            style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;color:#fde68a;font-size:18px;font-weight:700;outline:none;box-sizing:border-box">
+                    </div>
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Cuenta donde lo depositaron</label>
+                        <select id="fondo-cuenta" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;color:#f1f5f9;font-size:14px;outline:none">
+                            <option value="bcp">🏦 BCP</option>
+                            <option value="yape" selected>📲 Yape</option>
+                            <option value="interbank">🏦 Interbank</option>
+                            <option value="bbva">🏦 BBVA</option>
+                            <option value="plin">📲 Plin</option>
+                            <option value="efectivo">💵 Efectivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Fecha</label>
+                        <input type="date" id="fondo-fecha" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;color:#f1f5f9;font-size:14px;outline:none">
+                    </div>
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Descripción (opcional)</label>
+                        <input type="text" id="fondo-desc" placeholder="Ej. Recaudación ruta mañana"
+                            style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;color:#f1f5f9;font-size:14px;outline:none">
+                    </div>
+                    <button onclick="registrarFondoEmpresa()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer;margin-top:4px">
+                        💾 Guardar Recaudación
+                    </button>
+                </div>
+            </div>
+
+            <!-- Entregar fondo a la empresa -->
+            <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px;margin-bottom:12px">
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px">📤 Entregar Fondo a la Empresa</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto a entregar (S/)</label>
+                        <input type="number" step="0.01" inputmode="decimal" id="fondo-entrega-monto" placeholder="0.00"
+                            style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;color:#f1f5f9;font-size:18px;font-weight:700;outline:none;box-sizing:border-box">
+                    </div>
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Desde cuenta</label>
+                        <select id="fondo-entrega-cuenta" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;color:#f1f5f9;font-size:14px;outline:none">
+                            <option value="bcp">🏦 BCP</option>
+                            <option value="yape" selected>📲 Yape</option>
+                            <option value="interbank">🏦 Interbank</option>
+                            <option value="bbva">🏦 BBVA</option>
+                            <option value="plin">📲 Plin</option>
+                            <option value="efectivo">💵 Efectivo</option>
+                        </select>
+                    </div>
+                    <button onclick="entregarFondoEmpresa()" style="width:100%;padding:14px;border-radius:14px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.35);color:#f87171;font-weight:800;font-size:14px;cursor:pointer">
+                        ✅ Marcar como entregado
+                    </button>
+                </div>
+            </div>
+
+            <!-- Historial de fondos -->
+            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px">
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px">📋 Últimos movimientos empresa</div>
+                <div id="fondo-historial" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto">
+                    <!-- inyectado -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Ingreso -->
     <div id="modal-ingreso" class="modal-overlay hidden">
         <div class="modal-sheet premium-glass border border-slate-700/60 custom-shadow">
@@ -1840,6 +2029,229 @@ document.addEventListener("DOMContentLoaded",function(){
         </div>
     </div>
 
+        <!-- ══════════════════════════════════════════════════════
+             VISTA SOBRES (ENVELOPE BUDGETING)
+        ══════════════════════════════════════════════════════ -->
+        <div id="view-sobres" class="app-view hidden space-y-6" style="padding-bottom:140px">
+
+            <!-- Resumen total sobres -->
+            <div class="premium-glass rounded-3xl p-6 custom-shadow relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full opacity-5 blur-2xl" style="background:#f59e0b"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                    <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase">Total apartado en sobres</span>
+                    <span id="sobres-resumen-badge" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.25)">0 sobres</span>
+                </div>
+                <div style="font-size:32px;font-weight:800;color:#fde68a" id="sobres-total-guardado">S/ 0.00</div>
+                <div style="font-size:11px;color:#64748b;margin-top:4px">Dinero reservado · no tocar el balance general</div>
+
+                <!-- Mini barra de distribución -->
+                <div id="sobres-mini-barra" style="display:flex;gap:3px;margin-top:14px;height:8px;border-radius:99px;overflow:hidden">
+                    <!-- inyectado -->
+                </div>
+                <div id="sobres-mini-leyenda" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+                    <!-- inyectado -->
+                </div>
+            </div>
+
+            <!-- Grid de sobres -->
+            <div id="sobres-grid" style="display:flex;flex-direction:column;gap:14px">
+                <!-- inyectado por renderSobres() -->
+            </div>
+
+            <!-- Botón crear nuevo sobre -->
+            <button onclick="openModal('modal-nuevo-sobre');document.body.style.overflow='hidden'"
+                style="width:100%;padding:16px;border-radius:18px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:15px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 6px 24px rgba(245,158,11,0.3)">
+                ✉️ Crear Nuevo Sobre
+            </button>
+        </div>
+
+    </main>
+
+    <!-- ── MODAL NUEVO SOBRE ── -->
+    <div id="modal-nuevo-sobre" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-amber-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;color:#fde68a">✉️ Nuevo Sobre</h3>
+                    <p style="font-size:11px;color:#94a3b8;margin-top:2px">Reserva dinero para un fin específico</p>
+                </div>
+                <button onclick="closeModal('modal-nuevo-sobre');document.body.style.overflow=''" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+                <!-- Emoji + nombre -->
+                <div style="display:flex;gap:10px;align-items:flex-end">
+                    <div>
+                        <div style="font-size:10px;font-weight:600;color:#64748b;margin-bottom:5px">Ícono</div>
+                        <div id="sobre-emoji-preview" onclick="toggleSobreEmojiPicker()"
+                            style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.08);border:2px solid rgba(245,158,11,0.4);display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer">
+                            ✉️
+                        </div>
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre del sobre</label>
+                        <input type="text" id="sobre-nombre" placeholder="Ej. Gasolina, Comida, Moto..."
+                            style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    </div>
+                </div>
+
+                <!-- Emoji picker del sobre -->
+                <div id="sobre-emoji-picker" style="display:none;background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:10px">
+                    <div style="display:flex;flex-wrap:wrap;gap:4px">
+                        <span onclick="selectSobreEmoji('⛽')" class="emoji-opt">⛽</span><span onclick="selectSobreEmoji('🍔')" class="emoji-opt">🍔</span><span onclick="selectSobreEmoji('🛒')" class="emoji-opt">🛒</span><span onclick="selectSobreEmoji('🏍️')" class="emoji-opt">🏍️</span><span onclick="selectSobreEmoji('🔧')" class="emoji-opt">🔧</span><span onclick="selectSobreEmoji('💊')" class="emoji-opt">💊</span><span onclick="selectSobreEmoji('👕')" class="emoji-opt">👕</span><span onclick="selectSobreEmoji('📱')" class="emoji-opt">📱</span><span onclick="selectSobreEmoji('🏠')" class="emoji-opt">🏠</span><span onclick="selectSobreEmoji('🎮')" class="emoji-opt">🎮</span><span onclick="selectSobreEmoji('🎬')" class="emoji-opt">🎬</span><span onclick="selectSobreEmoji('💪')" class="emoji-opt">💪</span><span onclick="selectSobreEmoji('🚿')" class="emoji-opt">🚿</span><span onclick="selectSobreEmoji('💈')" class="emoji-opt">💈</span><span onclick="selectSobreEmoji('🐾')" class="emoji-opt">🐾</span><span onclick="selectSobreEmoji('🎓')" class="emoji-opt">🎓</span><span onclick="selectSobreEmoji('✈️')" class="emoji-opt">✈️</span><span onclick="selectSobreEmoji('🎁')" class="emoji-opt">🎁</span><span onclick="selectSobreEmoji('💰')" class="emoji-opt">💰</span><span onclick="selectSobreEmoji('🌟')" class="emoji-opt">🌟</span>
+                    </div>
+                </div>
+
+                <!-- Monto del sobre -->
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto a reservar (S/)</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="sobre-monto" placeholder="0.00"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#fde68a;font-size:20px;font-weight:700;outline:none;box-sizing:border-box">
+                </div>
+
+                <!-- Origen del dinero -->
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:8px">¿De dónde sale este dinero?</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <button id="sobre-origen-balance-btn" onclick="setSobreOrigen('balance')"
+                            style="padding:10px;border-radius:12px;background:rgba(16,185,129,0.2);border:2px solid var(--accent);color:#34d399;font-weight:700;font-size:12px;cursor:pointer">
+                            💰 De mi saldo WalletTrack
+                        </button>
+                        <button id="sobre-origen-manual-btn" onclick="setSobreOrigen('manual')"
+                            style="padding:10px;border-radius:12px;background:rgba(255,255,255,0.05);border:2px solid transparent;color:#94a3b8;font-weight:700;font-size:12px;cursor:pointer">
+                            ✏️ Lo defino manualmente
+                        </button>
+                    </div>
+                    <input type="hidden" id="sobre-origen" value="balance">
+                </div>
+
+                <!-- Color del sobre -->
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:8px">Color</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <div onclick="selectSobreColor('#f59e0b')" class="sobre-color-opt" style="background:#f59e0b" title="Naranja"></div>
+                        <div onclick="selectSobreColor('#10b981')" class="sobre-color-opt" style="background:#10b981" title="Verde"></div>
+                        <div onclick="selectSobreColor('#3b82f6')" class="sobre-color-opt" style="background:#3b82f6" title="Azul"></div>
+                        <div onclick="selectSobreColor('#a855f7')" class="sobre-color-opt" style="background:#a855f7" title="Morado"></div>
+                        <div onclick="selectSobreColor('#ec4899')" class="sobre-color-opt" style="background:#ec4899" title="Rosa"></div>
+                        <div onclick="selectSobreColor('#ef4444')" class="sobre-color-opt" style="background:#ef4444" title="Rojo"></div>
+                        <div onclick="selectSobreColor('#06b6d4')" class="sobre-color-opt" style="background:#06b6d4" title="Cyan"></div>
+                        <div onclick="selectSobreColor('#84cc16')" class="sobre-color-opt" style="background:#84cc16" title="Lima"></div>
+                    </div>
+                    <input type="hidden" id="sobre-color" value="#f59e0b">
+                </div>
+
+                <button onclick="guardarSobre()"
+                    style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer;margin-top:4px">
+                    ✉️ Crear Sobre
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL GASTAR DESDE SOBRE ── -->
+    <div id="modal-gastar-sobre" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-slate-700/60 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div id="modal-sobre-emoji" style="font-size:28px">✉️</div>
+                    <div>
+                        <h3 id="modal-sobre-nombre" style="font-size:16px;font-weight:800;color:#f1f5f9">Sobre</h3>
+                        <div id="modal-sobre-disponible" style="font-size:12px;color:#94a3b8">S/ 0 disponible</div>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-gastar-sobre');document.body.style.overflow=''" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+
+            <!-- Barra de progreso en el modal -->
+            <div id="modal-sobre-barra-wrap" style="margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-bottom:5px">
+                    <span>Gastado</span>
+                    <span id="modal-sobre-pct">0%</span>
+                </div>
+                <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden">
+                    <div id="modal-sobre-barra" style="height:100%;width:0%;border-radius:99px;transition:width .4s"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-top:5px">
+                    <span id="modal-sobre-gastado-str">S/ 0 gastado</span>
+                    <span id="modal-sobre-queda-str">S/ 0 queda</span>
+                </div>
+            </div>
+
+            <!-- Tabs: Gastar / Recargar / Historial -->
+            <div style="display:flex;gap:6px;margin-bottom:16px">
+                <button onclick="setSobreTab('gastar')" id="tab-gastar"
+                    style="flex:1;padding:9px;border-radius:10px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.3);color:#f87171;font-weight:700;font-size:12px;cursor:pointer">
+                    💸 Gastar
+                </button>
+                <button onclick="setSobreTab('recargar')" id="tab-recargar"
+                    style="flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#64748b;font-weight:700;font-size:12px;cursor:pointer">
+                    💰 Recargar
+                </button>
+                <button onclick="setSobreTab('historial')" id="tab-historial"
+                    style="flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#64748b;font-weight:700;font-size:12px;cursor:pointer">
+                    📋 Historial
+                </button>
+            </div>
+
+            <!-- Panel Gastar -->
+            <div id="panel-gastar" style="display:flex;flex-direction:column;gap:10px">
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto (S/)</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="sobre-gasto-monto" placeholder="0.00"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f87171;font-size:20px;font-weight:700;outline:none;box-sizing:border-box">
+                </div>
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Descripción</label>
+                    <input type="text" id="sobre-gasto-desc" placeholder="Ej. Grifo PetroPerú..."
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:11px 14px;color:#f1f5f9;font-size:13px;outline:none;box-sizing:border-box">
+                </div>
+                <button onclick="gastarDesdeSobre()"
+                    style="width:100%;padding:14px;border-radius:14px;background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.4);color:#f87171;font-weight:800;font-size:14px;cursor:pointer">
+                    💸 Registrar Gasto del Sobre
+                </button>
+            </div>
+
+            <!-- Panel Recargar -->
+            <div id="panel-recargar" style="display:none;flex-direction:column;gap:10px">
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto a agregar (S/)</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="sobre-recarga-monto" placeholder="0.00"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#34d399;font-size:20px;font-weight:700;outline:none;box-sizing:border-box">
+                </div>
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">¿De dónde sale?</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <button id="recarga-origen-balance-btn" onclick="setRecargaOrigen('balance')"
+                            style="padding:9px;border-radius:10px;background:rgba(16,185,129,0.2);border:2px solid var(--accent);color:#34d399;font-weight:700;font-size:11px;cursor:pointer">
+                            💰 Mi saldo
+                        </button>
+                        <button id="recarga-origen-manual-btn" onclick="setRecargaOrigen('manual')"
+                            style="padding:9px;border-radius:10px;background:rgba(255,255,255,0.05);border:2px solid transparent;color:#64748b;font-weight:700;font-size:11px;cursor:pointer">
+                            ✏️ Manual
+                        </button>
+                    </div>
+                    <input type="hidden" id="recarga-origen" value="balance">
+                </div>
+                <button onclick="recargarSobre()"
+                    style="width:100%;padding:14px;border-radius:14px;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.35);color:#34d399;font-weight:800;font-size:14px;cursor:pointer">
+                    💰 Agregar al Sobre
+                </button>
+            </div>
+
+            <!-- Panel Historial -->
+            <div id="panel-historial-sobre" style="display:none;max-height:220px;overflow-y:auto">
+                <!-- inyectado -->
+            </div>
+
+            <!-- Botón eliminar sobre -->
+            <button onclick="eliminarSobreActual()"
+                style="width:100%;padding:11px;border-radius:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;font-weight:700;font-size:12px;cursor:pointer;margin-top:14px">
+                🗑 Eliminar este sobre
+            </button>
+        </div>
+    </div>
+
     <!-- PERSISTENT PREMIUM BOTTOM NAVIGATION (Mobile-Ready) -->
     <nav style="position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--card-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgba(30,41,59,.8);padding:6px 4px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));display:flex;overflow-x:auto;gap:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
         <button onclick="switchView('view-dashboard')" id="nav-dashboard" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all nav-active" style="min-width:56px;flex-shrink:0">
@@ -1873,6 +2285,10 @@ document.addEventListener("DOMContentLoaded",function(){
         <button onclick="switchView('view-suscripciones')" id="nav-suscripciones" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all" style="min-width:56px;flex-shrink:0">
             <i data-lucide="refresh-cw" class="w-5 h-5 mb-1"></i>
             <span class="text-[10px] font-semibold">Fijos</span>
+        </button>
+        <button onclick="switchView('view-sobres')" id="nav-sobres" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all" style="min-width:56px;flex-shrink:0">
+            <span style="font-size:18px;margin-bottom:2px">✉️</span>
+            <span class="text-[10px] font-semibold">Sobres</span>
         </button>
         <button onclick="switchView('view-configuracion')" id="nav-configuracion" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all" style="min-width:56px;flex-shrink:0">
             <i data-lucide="settings" class="w-5 h-5 mb-1"></i>
@@ -1928,6 +2344,8 @@ document.addEventListener("DOMContentLoaded",function(){
             budgets: [],
             categoriasGasto: [],
             categoriasIngreso: [],
+            sobres: [],
+            sobreMovs: [],
             theme: {
                 accent:      "#10b981",
                 name:        "emerald",
@@ -1970,6 +2388,7 @@ document.addEventListener("DOMContentLoaded",function(){
             let movimiento = 0;
             AppState.transactions.forEach(t => {
                 if (t.account !== accountId) return;
+                if (t.category === '__fondo_empresa__') return; // excluir fondo empresa
                 if (t.type === 'income') movimiento += parseFloat(t.amount);
                 else movimiento -= parseFloat(t.amount);
             });
@@ -2004,6 +2423,8 @@ document.addEventListener("DOMContentLoaded",function(){
             AppState.cardCustom      = JSON.parse(localStorage.getItem("wallettrack_cards"))   || {};
             AppState.budgets         = JSON.parse(localStorage.getItem("wallettrack_budgets")) || [];
             AppState.security        = { ...AppState.security, ...(JSON.parse(localStorage.getItem("wallettrack_security")) || {}) };
+            AppState.sobres          = JSON.parse(localStorage.getItem("wallettrack_sobres"))   || [];
+            AppState.sobreMovs       = JSON.parse(localStorage.getItem("wallettrack_sobre_movs")) || [];
 
             // Rellenar inputs de fecha del día de hoy
             const today = new Date().toISOString().split('T')[0];
@@ -2023,9 +2444,12 @@ document.addEventListener("DOMContentLoaded",function(){
             localStorage.setItem("wallettrack_cards",         JSON.stringify(AppState.cardCustom));
             localStorage.setItem("wallettrack_budgets",       JSON.stringify(AppState.budgets));
             localStorage.setItem("wallettrack_security",      JSON.stringify(AppState.security));
+            localStorage.setItem("wallettrack_sobres",        JSON.stringify(AppState.sobres || []));
+            localStorage.setItem("wallettrack_sobre_movs",    JSON.stringify(AppState.sobreMovs || []));
 
             triggerSyncBadge();
             refreshAllUI();
+            renderFondoEmpresa();
         }
 
         function triggerSyncBadge() {
@@ -2058,12 +2482,19 @@ document.addEventListener("DOMContentLoaded",function(){
                 "view-estadisticas":  "nav-estadisticas",
                 "view-suscripciones": "nav-suscripciones",
                 "view-configuracion": "nav-configuracion",
+                "view-sobres":        "nav-sobres",
                 "view-retos":         "nav-dashboard"
             }[viewId];
 
             if(relativeNav) {
                 document.getElementById(relativeNav).classList.add("nav-active");
             }
+
+            // Refrescar historial de cobros viernes cuando se abre configuración
+            if (viewId === 'view-configuracion') renderHistorialCobroViernes();
+            // Refrescar sobres cuando se abre la vista
+            if (viewId === 'view-sobres') renderSobres();
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -2078,11 +2509,13 @@ document.addEventListener("DOMContentLoaded",function(){
         // MÓDULO 1 & 2: RECONSTRUCCIÓN DE DASHBOARD & DISPONIBLE REAL
         function refreshAllUI() {
             // --- BALANCE REAL = SaldosIniciales + movimientos históricos ---
+            // EXCLUIR transacciones de fondo empresa
             let totalSaldosIniciales = 0;
             Object.values(AppState.saldosIniciales || {}).forEach(v => totalSaldosIniciales += parseFloat(v) || 0);
             let ingresosHistorico = 0;
             let gastosHistorico = 0;
             AppState.transactions.forEach(t => {
+                if (t.category === '__fondo_empresa__') return; // excluir fondo empresa
                 if (t.type === "income") ingresosHistorico += parseFloat(t.amount);
                 else gastosHistorico += parseFloat(t.amount);
             });
@@ -2094,6 +2527,7 @@ document.addEventListener("DOMContentLoaded",function(){
             let ingresosMes = 0;
             let gastosMes = 0;
             AppState.transactions.forEach(t => {
+                if (t.category === '__fondo_empresa__') return; // excluir fondo empresa
                 const mesTx = t.date ? t.date.substring(0, 7) : '';
                 if (mesTx === mesActual) {
                     if (t.type === "income") ingresosMes += parseFloat(t.amount);
@@ -2350,7 +2784,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
             const categoriesMap = {};
             AppState.transactions.forEach(t => {
-                if (t.type === "expense") {
+                if (t.type === "expense" && t.category !== '__fondo_empresa__') {
                     const mesTx = (t.date || '').substring(0, 7);
                     if (mesTx === mesActual) {
                         const cat = t.category || 'Sin categoría';
@@ -3283,6 +3717,7 @@ document.addEventListener("DOMContentLoaded",function(){
             const filterCat = selectCategory.value;
 
             const filtered = AppState.transactions.filter(t => {
+                if (t.category === '__fondo_empresa__') return false; // ocultar fondo empresa del historial
                 const matchesSearch = t.description.toLowerCase().includes(searchQuery) || t.category.toLowerCase().includes(searchQuery);
                 const matchesType = filterType === "all" || t.type === filterType;
                 const matchesCategory = filterCat === "all" || t.category === filterCat;
@@ -5032,6 +5467,595 @@ document.addEventListener("DOMContentLoaded",function(){
             }
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // SISTEMA DE SOBRES (ENVELOPE BUDGETING)
+        // ══════════════════════════════════════════════════════════════════
+
+        // Estado temporal del sobre que está abierto en el modal
+        let _sobreActivoId = null;
+        let _sobreColor    = '#f59e0b';
+        let _sobreOrigen   = 'balance';
+        let _recargaOrigen = 'balance';
+
+        // ── Helpers ────────────────────────────────────────────────────────
+        function getSobres() {
+            return AppState.sobres || [];
+        }
+
+        function getSobreById(id) {
+            return getSobres().find(s => s.id === id);
+        }
+
+        function getSobreGastado(sobreId) {
+            return (AppState.sobreMovs || [])
+                .filter(m => m.sobreId === sobreId && m.tipo === 'gasto')
+                .reduce((acc, m) => acc + parseFloat(m.monto), 0);
+        }
+
+        function getSobreDisponible(sobreId) {
+            const sobre = getSobreById(sobreId);
+            if (!sobre) return 0;
+            const recargas = (AppState.sobreMovs || [])
+                .filter(m => m.sobreId === sobreId && m.tipo === 'recarga')
+                .reduce((acc, m) => acc + parseFloat(m.monto), 0);
+            const gastos = getSobreGastado(sobreId);
+            return sobre.montoInicial + recargas - gastos;
+        }
+
+        function getSobreTotalCargado(sobreId) {
+            const sobre = getSobreById(sobreId);
+            if (!sobre) return 0;
+            const recargas = (AppState.sobreMovs || [])
+                .filter(m => m.sobreId === sobreId && m.tipo === 'recarga')
+                .reduce((acc, m) => acc + parseFloat(m.monto), 0);
+            return sobre.montoInicial + recargas;
+        }
+
+        // ── Crear sobre ────────────────────────────────────────────────────
+        function guardarSobre() {
+            const nombre = document.getElementById('sobre-nombre').value.trim();
+            const monto  = parseFloat(document.getElementById('sobre-monto').value);
+            const emoji  = document.getElementById('sobre-emoji-preview').textContent.trim() || '✉️';
+            const origen = document.getElementById('sobre-origen').value;
+
+            if (!nombre) { toast('Ingresa un nombre para el sobre', 'error'); return; }
+            if (isNaN(monto) || monto <= 0) { toast('Ingresa un monto válido', 'error'); return; }
+
+            // Si origen = balance, descontar del balance (registrar como gasto especial)
+            if (origen === 'balance') {
+                const saldoTotal = getSaldoTotal();
+                if (monto > saldoTotal + 0.01) {
+                    toast('Saldo insuficiente. Tienes S/ ' + saldoTotal.toFixed(2), 'error');
+                    return;
+                }
+                // Registrar como gasto "apartado en sobre" — sí afecta balance
+                AppState.transactions.unshift({
+                    id: Date.now().toString(),
+                    date: new Date().toISOString().split('T')[0],
+                    type: 'expense',
+                    category: '✉️ Sobre: ' + nombre,
+                    amount: monto,
+                    description: '✉️ Apartado al sobre "' + nombre + '"',
+                    account: 'efectivo',
+                    esSobre: true
+                });
+            }
+
+            if (!AppState.sobres) AppState.sobres = [];
+            AppState.sobres.push({
+                id: 'sobre_' + Date.now(),
+                nombre,
+                emoji,
+                montoInicial: monto,
+                color: _sobreColor,
+                fechaCreacion: new Date().toISOString().split('T')[0]
+            });
+
+            saveState();
+            closeModal('modal-nuevo-sobre');
+            document.body.style.overflow = '';
+            // limpiar form
+            document.getElementById('sobre-nombre').value = '';
+            document.getElementById('sobre-monto').value = '';
+            document.getElementById('sobre-emoji-preview').textContent = '✉️';
+            renderSobres();
+            toast('✅ Sobre "' + nombre + '" creado');
+        }
+
+        // ── Abrir modal de un sobre ────────────────────────────────────────
+        function abrirSobre(id) {
+            _sobreActivoId = id;
+            const sobre = getSobreById(id);
+            if (!sobre) return;
+
+            const disponible  = getSobreDisponible(id);
+            const totalCargado = getSobreTotalCargado(id);
+            const gastado     = totalCargado - disponible;
+            const pct         = totalCargado > 0 ? Math.min(100, Math.round((gastado / totalCargado) * 100)) : 0;
+            const barColor    = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : sobre.color;
+
+            document.getElementById('modal-sobre-emoji').textContent       = sobre.emoji;
+            document.getElementById('modal-sobre-nombre').textContent      = sobre.nombre;
+            document.getElementById('modal-sobre-disponible').textContent  = 'S/ ' + disponible.toFixed(2) + ' disponible';
+            document.getElementById('modal-sobre-pct').textContent         = pct + '%';
+            document.getElementById('modal-sobre-barra').style.width       = pct + '%';
+            document.getElementById('modal-sobre-barra').style.background  = barColor;
+            document.getElementById('modal-sobre-gastado-str').textContent = 'S/ ' + gastado.toFixed(2) + ' gastado';
+            document.getElementById('modal-sobre-queda-str').textContent   = 'S/ ' + disponible.toFixed(2) + ' queda';
+
+            // Reset inputs
+            document.getElementById('sobre-gasto-monto').value = '';
+            document.getElementById('sobre-gasto-desc').value  = '';
+            document.getElementById('sobre-recarga-monto').value = '';
+
+            setSobreTab('gastar');
+            openModal('modal-gastar-sobre');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // ── Gastar desde sobre ─────────────────────────────────────────────
+        function gastarDesdeSobre() {
+            const sobre = getSobreById(_sobreActivoId);
+            if (!sobre) return;
+            const monto = parseFloat(document.getElementById('sobre-gasto-monto').value);
+            const desc  = document.getElementById('sobre-gasto-desc').value.trim() || 'Gasto del sobre';
+            if (isNaN(monto) || monto <= 0) { toast('Ingresa un monto', 'error'); return; }
+
+            const disponible = getSobreDisponible(_sobreActivoId);
+            if (monto > disponible + 0.01) {
+                toast('El sobre solo tiene S/ ' + disponible.toFixed(2), 'error');
+                return;
+            }
+
+            if (!AppState.sobreMovs) AppState.sobreMovs = [];
+            AppState.sobreMovs.unshift({
+                id: Date.now().toString(),
+                sobreId: _sobreActivoId,
+                tipo: 'gasto',
+                monto,
+                desc,
+                fecha: new Date().toISOString().split('T')[0]
+            });
+
+            saveState();
+            abrirSobre(_sobreActivoId); // refrescar modal
+            renderSobres();
+            toast('💸 Gasto registrado en sobre "' + sobre.nombre + '"');
+        }
+
+        // ── Recargar sobre ─────────────────────────────────────────────────
+        function recargarSobre() {
+            const sobre = getSobreById(_sobreActivoId);
+            if (!sobre) return;
+            const monto  = parseFloat(document.getElementById('sobre-recarga-monto').value);
+            const origen = document.getElementById('recarga-origen').value;
+            if (isNaN(monto) || monto <= 0) { toast('Ingresa un monto', 'error'); return; }
+
+            if (origen === 'balance') {
+                const saldoTotal = getSaldoTotal();
+                if (monto > saldoTotal + 0.01) {
+                    toast('Saldo insuficiente. Tienes S/ ' + saldoTotal.toFixed(2), 'error');
+                    return;
+                }
+                AppState.transactions.unshift({
+                    id: Date.now().toString(),
+                    date: new Date().toISOString().split('T')[0],
+                    type: 'expense',
+                    category: '✉️ Sobre: ' + sobre.nombre,
+                    amount: monto,
+                    description: '✉️ Recarga al sobre "' + sobre.nombre + '"',
+                    account: 'efectivo',
+                    esSobre: true
+                });
+            }
+
+            if (!AppState.sobreMovs) AppState.sobreMovs = [];
+            AppState.sobreMovs.unshift({
+                id: Date.now().toString(),
+                sobreId: _sobreActivoId,
+                tipo: 'recarga',
+                monto,
+                desc: origen === 'balance' ? 'Recarga desde saldo' : 'Recarga manual',
+                fecha: new Date().toISOString().split('T')[0]
+            });
+
+            saveState();
+            abrirSobre(_sobreActivoId);
+            renderSobres();
+            toast('💰 S/ ' + monto.toFixed(2) + ' agregado al sobre');
+        }
+
+        // ── Eliminar sobre ─────────────────────────────────────────────────
+        function eliminarSobreActual() {
+            const sobre = getSobreById(_sobreActivoId);
+            if (!sobre) return;
+            if (!confirm('¿Eliminar el sobre "' + sobre.nombre + '"? Los movimientos del sobre también se borrarán.')) return;
+            AppState.sobres = (AppState.sobres || []).filter(s => s.id !== _sobreActivoId);
+            AppState.sobreMovs = (AppState.sobreMovs || []).filter(m => m.sobreId !== _sobreActivoId);
+            saveState();
+            closeModal('modal-gastar-sobre');
+            document.body.style.overflow = '';
+            renderSobres();
+            toast('🗑 Sobre eliminado');
+        }
+
+        // ── Tabs del modal ─────────────────────────────────────────────────
+        function setSobreTab(tab) {
+            ['gastar','recargar','historial'].forEach(t => {
+                document.getElementById('panel-' + (t === 'historial' ? 'historial-sobre' : t)).style.display = 'none';
+                const btn = document.getElementById('tab-' + t);
+                if (btn) {
+                    btn.style.background = 'rgba(255,255,255,0.05)';
+                    btn.style.borderColor = 'rgba(255,255,255,0.08)';
+                    btn.style.color = '#64748b';
+                }
+            });
+
+            const activeStyles = {
+                gastar:    { bg:'rgba(239,68,68,0.2)',    border:'rgba(239,68,68,0.3)',    color:'#f87171'  },
+                recargar:  { bg:'rgba(16,185,129,0.2)',   border:'rgba(16,185,129,0.3)',   color:'#34d399'  },
+                historial: { bg:'rgba(129,140,248,0.2)',  border:'rgba(129,140,248,0.3)',  color:'#818cf8'  },
+            }[tab];
+
+            const panelId = tab === 'historial' ? 'panel-historial-sobre' : 'panel-' + tab;
+            document.getElementById(panelId).style.display = 'flex';
+            document.getElementById(panelId).style.flexDirection = 'column';
+            const btn = document.getElementById('tab-' + tab);
+            if (btn) {
+                btn.style.background = activeStyles.bg;
+                btn.style.borderColor = activeStyles.border;
+                btn.style.color = activeStyles.color;
+            }
+
+            if (tab === 'historial') renderHistorialSobre(_sobreActivoId);
+        }
+
+        function renderHistorialSobre(sobreId) {
+            const el = document.getElementById('panel-historial-sobre');
+            if (!el) return;
+            const movs = (AppState.sobreMovs || []).filter(m => m.sobreId === sobreId);
+            if (!movs.length) {
+                el.innerHTML = '<p style="font-size:12px;color:#475569;text-align:center;padding:16px">Sin movimientos aún.</p>';
+                return;
+            }
+            el.innerHTML = movs.map(m => {
+                const isGasto = m.tipo === 'gasto';
+                return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.05);margin-bottom:5px">
+                    <div style="flex:1;min-width:0">
+                        <div style="font-size:11px;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.desc}</div>
+                        <div style="font-size:9px;color:#475569;margin-top:2px">${m.fecha}</div>
+                    </div>
+                    <span style="font-size:12px;font-weight:700;color:${isGasto?'#f87171':'#34d399'};margin-left:10px">${isGasto?'-':'+'}S/${parseFloat(m.monto).toFixed(2)}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Render principal de sobres ─────────────────────────────────────
+        function renderSobres() {
+            const grid = document.getElementById('sobres-grid');
+            if (!grid) return;
+            const sobres = getSobres();
+
+            // Resumen superior
+            const totalGuardado = sobres.reduce((acc, s) => acc + getSobreDisponible(s.id), 0);
+            const totalEl = document.getElementById('sobres-total-guardado');
+            const badgeEl = document.getElementById('sobres-resumen-badge');
+            const barraEl = document.getElementById('sobres-mini-barra');
+            const leyEl   = document.getElementById('sobres-mini-leyenda');
+
+            if (totalEl) totalEl.textContent = 'S/ ' + totalGuardado.toLocaleString('es-PE', {minimumFractionDigits:2});
+            if (badgeEl) badgeEl.textContent = sobres.length + (sobres.length === 1 ? ' sobre' : ' sobres');
+
+            if (barraEl && totalGuardado > 0) {
+                barraEl.innerHTML = sobres.map(s => {
+                    const disp = getSobreDisponible(s.id);
+                    const pct  = (disp / totalGuardado * 100).toFixed(1);
+                    return `<div style="flex:${pct};background:${s.color};border-radius:99px;min-width:4px" title="${s.nombre}: S/${disp.toFixed(2)}"></div>`;
+                }).join('');
+            }
+            if (leyEl) {
+                leyEl.innerHTML = sobres.map(s =>
+                    `<div style="display:flex;align-items:center;gap:4px">
+                        <div style="width:8px;height:8px;border-radius:50%;background:${s.color}"></div>
+                        <span style="font-size:10px;color:#64748b">${s.emoji} ${s.nombre}</span>
+                    </div>`
+                ).join('');
+            }
+
+            if (!sobres.length) {
+                grid.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#475569">
+                    <div style="font-size:48px;margin-bottom:12px">✉️</div>
+                    <div style="font-size:14px;font-weight:600;color:#64748b;margin-bottom:6px">Sin sobres todavía</div>
+                    <div style="font-size:12px;color:#475569">Crea tu primer sobre para apartar dinero<br>para gasolina, comida, moto, etc.</div>
+                </div>`;
+                return;
+            }
+
+            grid.innerHTML = sobres.map(s => {
+                const disponible   = getSobreDisponible(s.id);
+                const totalCargado = getSobreTotalCargado(s.id);
+                const gastado      = totalCargado - disponible;
+                const pct          = totalCargado > 0 ? Math.min(100, Math.round((gastado / totalCargado) * 100)) : 0;
+                const barColor     = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : s.color;
+                const quedan       = totalCargado - gastado;
+                const agotado      = quedan <= 0;
+
+                return `<div onclick="abrirSobre('${s.id}')"
+                    style="background:var(--card-bg);border:1px solid ${s.color}30;border-radius:20px;padding:18px;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s"
+                    onmouseenter="this.style.transform='scale(1.01)'" onmouseleave="this.style.transform='scale(1)'">
+
+                    <!-- Glow de fondo -->
+                    <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:${s.color};opacity:.08;pointer-events:none"></div>
+
+                    <!-- Header -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div style="width:44px;height:44px;border-radius:14px;background:${s.color}20;border:1px solid ${s.color}30;display:flex;align-items:center;justify-content:center;font-size:22px">${s.emoji}</div>
+                            <div>
+                                <div style="font-size:14px;font-weight:800;color:#f1f5f9">${s.nombre}</div>
+                                <div style="font-size:10px;color:#64748b">${agotado ? '⚠️ Agotado' : 'S/ '+totalCargado.toLocaleString('es-PE',{minimumFractionDigits:0})+' total'}</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:18px;font-weight:800;color:${agotado?'#f87171':s.color}">${agotado?'S/ 0':'S/ '+disponible.toLocaleString('es-PE',{minimumFractionDigits:2})}</div>
+                            <div style="font-size:10px;color:#64748b">disponible</div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de progreso -->
+                    <div style="height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-bottom:8px">
+                        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .5s"></div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div style="display:flex;gap:14px">
+                            <div>
+                                <div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.4px">Gastado</div>
+                                <div style="font-size:12px;font-weight:700;color:#f87171">S/ ${gastado.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.4px">Queda</div>
+                                <div style="font-size:12px;font-weight:700;color:${agotado?'#f87171':s.color}">S/ ${disponible.toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:${barColor}20;color:${barColor};border:1px solid ${barColor}30">${pct}% usado</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Helpers UI del modal de crear sobre ───────────────────────────
+        function setSobreOrigen(origen) {
+            _sobreOrigen = origen;
+            document.getElementById('sobre-origen').value = origen;
+            const bBtn = document.getElementById('sobre-origen-balance-btn');
+            const mBtn = document.getElementById('sobre-origen-manual-btn');
+            if (origen === 'balance') {
+                bBtn.style.borderColor = 'var(--accent)'; bBtn.style.background = 'rgba(16,185,129,0.2)'; bBtn.style.color = '#34d399';
+                mBtn.style.borderColor = 'transparent';   mBtn.style.background = 'rgba(255,255,255,0.05)'; mBtn.style.color = '#64748b';
+            } else {
+                mBtn.style.borderColor = 'var(--accent)'; mBtn.style.background = 'rgba(16,185,129,0.15)'; mBtn.style.color = '#34d399';
+                bBtn.style.borderColor = 'transparent';   bBtn.style.background = 'rgba(255,255,255,0.05)'; bBtn.style.color = '#64748b';
+            }
+        }
+
+        function setRecargaOrigen(origen) {
+            _recargaOrigen = origen;
+            document.getElementById('recarga-origen').value = origen;
+            const bBtn = document.getElementById('recarga-origen-balance-btn');
+            const mBtn = document.getElementById('recarga-origen-manual-btn');
+            if (origen === 'balance') {
+                bBtn.style.borderColor = 'var(--accent)'; bBtn.style.background = 'rgba(16,185,129,0.2)'; bBtn.style.color = '#34d399';
+                mBtn.style.borderColor = 'transparent';   mBtn.style.background = 'rgba(255,255,255,0.05)'; mBtn.style.color = '#64748b';
+            } else {
+                mBtn.style.borderColor = 'var(--accent)'; mBtn.style.background = 'rgba(16,185,129,0.15)'; mBtn.style.color = '#34d399';
+                bBtn.style.borderColor = 'transparent';   bBtn.style.background = 'rgba(255,255,255,0.05)'; bBtn.style.color = '#64748b';
+            }
+        }
+
+        function selectSobreColor(color) {
+            _sobreColor = color;
+            document.getElementById('sobre-color').value = color;
+            document.querySelectorAll('.sobre-color-opt').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        function toggleSobreEmojiPicker() {
+            const el = document.getElementById('sobre-emoji-picker');
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function selectSobreEmoji(emoji) {
+            const preview = document.getElementById('sobre-emoji-preview');
+            if (preview) preview.textContent = emoji;
+            const el = document.getElementById('sobre-emoji-picker');
+            if (el) el.style.display = 'none';
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // FONDO EMPRESA — dinero recaudado que NO es del usuario
+        // ══════════════════════════════════════════════════════════════════
+        function getFondoEmpresaMovs() {
+            return AppState.transactions.filter(t => t.category === '__fondo_empresa__');
+        }
+
+        function getSaldoFondoEmpresa() {
+            return getFondoEmpresaMovs().reduce((acc, t) => {
+                if (t.type === 'income') return acc + parseFloat(t.amount);
+                return acc - parseFloat(t.amount);
+            }, 0);
+        }
+
+        function registrarFondoEmpresa() {
+            const monto   = parseFloat(document.getElementById('fondo-monto').value);
+            const cuenta  = document.getElementById('fondo-cuenta').value;
+            const fecha   = document.getElementById('fondo-fecha').value;
+            const desc    = document.getElementById('fondo-desc').value.trim() || 'Recaudación empresa';
+            if (isNaN(monto) || monto <= 0) { toast('Ingresa un monto válido', 'error'); return; }
+            // Guardamos como income pero con categoría especial __fondo_empresa__
+            AppState.transactions.unshift({
+                id: Date.now().toString(),
+                date: fecha,
+                type: 'income',
+                category: '__fondo_empresa__',
+                amount: monto,
+                description: '🏢 ' + desc,
+                account: cuenta,
+                esFondoEmpresa: true
+            });
+            document.getElementById('fondo-monto').value = '';
+            document.getElementById('fondo-desc').value = '';
+            saveState();
+            renderFondoEmpresa();
+            toast('✅ Recaudación registrada como Fondo Empresa');
+        }
+
+        function entregarFondoEmpresa() {
+            const monto  = parseFloat(document.getElementById('fondo-entrega-monto').value);
+            const cuenta = document.getElementById('fondo-entrega-cuenta').value;
+            if (isNaN(monto) || monto <= 0) { toast('Ingresa monto a entregar', 'error'); return; }
+            const saldo = getSaldoFondoEmpresa();
+            if (monto > saldo + 0.01) {
+                toast('El monto supera el fondo empresa actual (S/ ' + saldo.toFixed(2) + ')', 'error');
+                return;
+            }
+            const today = new Date().toISOString().split('T')[0];
+            AppState.transactions.unshift({
+                id: Date.now().toString(),
+                date: today,
+                type: 'expense',
+                category: '__fondo_empresa__',
+                amount: monto,
+                description: '🏢 Entregado a empresa',
+                account: cuenta,
+                esFondoEmpresa: true
+            });
+            document.getElementById('fondo-entrega-monto').value = '';
+            saveState();
+            renderFondoEmpresa();
+            toast('✅ Fondo entregado a empresa');
+        }
+
+        function renderFondoEmpresa() {
+            const saldo = getSaldoFondoEmpresa();
+            const saldoStr = 'S/ ' + saldo.toLocaleString('es-PE', {minimumFractionDigits:2});
+
+            // Actualizar tarjeta dashboard
+            const cardEl = document.getElementById('card-fondo-empresa');
+            const totalEl = document.getElementById('fondo-empresa-total');
+            if (cardEl) cardEl.style.display = saldo > 0 ? 'flex' : 'none';
+            if (totalEl) totalEl.textContent = saldoStr;
+
+            // Actualizar modal
+            const mTotalEl = document.getElementById('fondo-empresa-modal-total');
+            if (mTotalEl) mTotalEl.textContent = saldoStr;
+
+            // Historial en modal
+            const histEl = document.getElementById('fondo-historial');
+            if (histEl) {
+                const movs = getFondoEmpresaMovs().slice(0,10);
+                if (!movs.length) {
+                    histEl.innerHTML = '<p style="font-size:12px;color:#475569;text-align:center;padding:8px">Sin movimientos aún.</p>';
+                } else {
+                    histEl.innerHTML = movs.map(m => {
+                        const isIn = m.type === 'income';
+                        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.05)">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:11px;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.description}</div>
+                                <div style="font-size:9px;color:#475569">${m.date}</div>
+                            </div>
+                            <span style="font-size:12px;font-weight:700;color:${isIn?'#fbbf24':'#94a3b8'};margin-left:10px">${isIn?'+':'-'}S/${parseFloat(m.amount).toFixed(2)}</span>
+                        </div>`;
+                    }).join('');
+                }
+            }
+        }
+
+        function openFondoEmpresa() {
+            // setear fecha de hoy
+            document.getElementById('fondo-fecha').value = new Date().toISOString().split('T')[0];
+            renderFondoEmpresa();
+            openModal('modal-fondo-empresa');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // COBRO DEL VIERNES — ingreso semanal
+        // ══════════════════════════════════════════════════════════════════
+        function registrarCobroViernes(manual) {
+            const monto  = parseFloat(document.getElementById('cobro-viernes-monto').value);
+            const cuenta = document.getElementById('cobro-viernes-cuenta').value;
+            if (isNaN(monto) || monto <= 0) { toast('Configura el monto de tu cobro', 'error'); return; }
+
+            let fecha = new Date().toISOString().split('T')[0];
+            if (manual) {
+                const input = prompt('¿Qué fecha pongo? (YYYY-MM-DD)', fecha);
+                if (!input) return;
+                fecha = input.trim();
+            }
+
+            AppState.transactions.unshift({
+                id: Date.now().toString(),
+                date: fecha,
+                type: 'income',
+                category: '💸 Sueldo Semanal',
+                amount: monto,
+                description: '💸 Cobro viernes — MATE',
+                account: cuenta
+            });
+            saveState();
+            renderHistorialCobroViernes();
+            toast('✅ Cobro de S/ ' + monto.toFixed(2) + ' registrado 💸');
+        }
+
+        function renderHistorialCobroViernes() {
+            const el = document.getElementById('cobro-viernes-historial');
+            if (!el) return;
+            const cobros = AppState.transactions
+                .filter(t => t.description && t.description.includes('Cobro viernes'))
+                .slice(0, 5);
+            if (!cobros.length) {
+                el.innerHTML = '<p style="font-size:11px;color:#475569;padding:4px 0">Sin cobros registrados aún.</p>';
+                return;
+            }
+            el.innerHTML = cobros.map(c =>
+                `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.15)">
+                    <span style="font-size:11px;color:#c4b5fd">${c.date}</span>
+                    <span style="font-size:12px;font-weight:700;color:#a78bfa">+S/${parseFloat(c.amount).toFixed(2)}</span>
+                </div>`
+            ).join('');
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // EMOJI PICKER
+        // ══════════════════════════════════════════════════════════════════
+        function toggleEmojiPicker() {
+            const grid = document.getElementById('emoji-picker-grid');
+            if (!grid) return;
+            grid.style.display = grid.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function selectEmoji(emoji) {
+            const emojiInput = document.getElementById('nueva-cat-emoji');
+            const preview    = document.getElementById('cat-emoji-preview');
+            if (emojiInput) emojiInput.value = emoji;
+            if (preview)    preview.textContent = emoji;
+            // Ocultar picker
+            const grid = document.getElementById('emoji-picker-grid');
+            if (grid) grid.style.display = 'none';
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // OVERRIDE: refreshAllUI para excluir fondos empresa del balance
+        // ══════════════════════════════════════════════════════════════════
+        const _origRefreshAllUI = refreshAllUI;
+
+        // Patch de getCatsGasto / getCatsIngreso para que el selector poblarSelectCats
+        // no muestre __fondo_empresa__ como opción
+        const _origGetCatsGasto   = getCatsGasto;
+        const _origGetCatsIngreso = getCatsIngreso;
+
         // INICIALIZACIÓN COMPLETA
         function initApp() {
             loadState();
@@ -5039,6 +6063,9 @@ document.addEventListener("DOMContentLoaded",function(){
             renderSaldosForm();
             poblarSelectCats();
             refreshAllUI();
+            renderFondoEmpresa();
+            renderHistorialCobroViernes();
+            renderSobres();
             checkPinLock();
             if (AppState.security.autoLock && AppState.security.pinEnabled) {
                 resetAutoLockTimer();
