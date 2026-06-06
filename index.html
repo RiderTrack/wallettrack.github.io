@@ -1031,7 +1031,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 </div>
 
                 <!-- Filtros -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <input type="text" id="search-movimiento" oninput="filterTransactions()" placeholder="Buscar descripción..." class="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:ring-2 accent-ring">
                     <select id="filter-type" onchange="filterTransactions()" class="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:ring-2 accent-ring">
                         <option value="all">Todos los flujos</option>
@@ -1041,6 +1041,16 @@ document.addEventListener("DOMContentLoaded",function(){
                     <select id="filter-category" onchange="filterTransactions()" class="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:ring-2 accent-ring">
                         <option value="all">Todas las Categorías</option>
                     </select>
+                </div>
+                <!-- Toggle Fondo Empresa -->
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.18);border-radius:12px">
+                    <span style="font-size:15px">🏢</span>
+                    <span style="font-size:12px;color:#94a3b8;flex:1">Mostrar movimientos de Fondo Empresa</span>
+                    <label style="display:flex;align-items:center;cursor:pointer;gap:8px">
+                        <input type="checkbox" id="filter-mostrar-fondo" onchange="filterTransactions()"
+                            style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+                        <span style="font-size:11px;color:#fbbf24;font-weight:600">Incluir</span>
+                    </label>
                 </div>
 
                 <!-- Listado interactivo -->
@@ -1394,6 +1404,95 @@ document.addEventListener("DOMContentLoaded",function(){
                 <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px">📋 Últimos movimientos empresa</div>
                 <div id="fondo-historial" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto">
                     <!-- inyectado -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MODAL EDITAR TRANSACCIÓN ══ -->
+    <div id="modal-editar-tx" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-sky-500/30 custom-shadow">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+                <div>
+                    <h3 id="edit-tx-titulo" style="font-size:16px;font-weight:800;color:#f1f5f9">✏️ Editar Movimiento</h3>
+                    <p style="font-size:11px;color:#94a3b8;margin-top:2px">Modifica cualquier campo o reclasifica</p>
+                </div>
+                <button onclick="closeModal('modal-editar-tx');document.body.style.overflow=''"
+                    style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:13px">
+
+                <!-- Tipo -->
+                <div>
+                    <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase">Tipo de movimiento</label>
+                    <select id="edit-tx-tipo" onchange="onEditTxTipoChange()"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:11px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                        <option value="income">💚 Ingreso (tuyo)</option>
+                        <option value="expense">💸 Gasto (tuyo)</option>
+                        <option value="fondo_empresa">🏢 Fondo Empresa (no es tuyo)</option>
+                    </select>
+                    <!-- Aviso cuando se elige Fondo Empresa -->
+                    <div id="edit-tx-fondo-aviso" style="display:none;margin-top:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:9px 12px;font-size:11px;color:#fbbf24">
+                        ⚠️ Al guardar, este movimiento dejará de afectar tu balance personal y se contará como Fondo Empresa.
+                    </div>
+                </div>
+
+                <!-- Monto -->
+                <div>
+                    <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase">Monto (S/)</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="edit-tx-monto"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f87171;font-size:20px;font-weight:700;outline:none;box-sizing:border-box">
+                </div>
+
+                <!-- Categoría -->
+                <div>
+                    <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase">Categoría</label>
+                    <select id="edit-tx-categoria"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:11px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                    </select>
+                </div>
+
+                <!-- Fecha -->
+                <div>
+                    <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase">Fecha</label>
+                    <input type="date" id="edit-tx-fecha"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:11px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase">Descripción</label>
+                    <input type="text" id="edit-tx-desc" placeholder="Descripción del movimiento..."
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:11px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                </div>
+
+                <!-- Cuenta -->
+                <div>
+                    <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase">Cuenta / Billetera</label>
+                    <select id="edit-tx-cuenta"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:11px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                        <option value="bcp">🏦 BCP</option>
+                        <option value="interbank">🏦 Interbank</option>
+                        <option value="bbva">🏦 BBVA</option>
+                        <option value="yape">📲 Yape</option>
+                        <option value="plin">📲 Plin</option>
+                        <option value="efectivo">💵 Efectivo</option>
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+                    <button onclick="closeModal('modal-editar-tx');document.body.style.overflow=''"
+                        style="padding:13px;border-radius:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:700;font-size:13px;cursor:pointer">
+                        Cancelar
+                    </button>
+                    <button onclick="guardarEditarTx()"
+                        style="padding:13px;border-radius:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(14,165,233,0.25)">
+                        ✅ Guardar cambios
+                    </button>
                 </div>
             </div>
         </div>
@@ -3712,12 +3811,14 @@ document.addEventListener("DOMContentLoaded",function(){
             });
             selectCategory.value = currentSelected;
 
-            const searchQuery = document.getElementById("search-movimiento").value.toLowerCase();
-            const filterType = document.getElementById("filter-type").value;
-            const filterCat = selectCategory.value;
+            const searchQuery  = document.getElementById("search-movimiento").value.toLowerCase();
+            const filterType   = document.getElementById("filter-type").value;
+            const filterCat    = selectCategory.value;
+            const mostrarFondo = document.getElementById("filter-mostrar-fondo")?.checked || false;
 
             const filtered = AppState.transactions.filter(t => {
-                if (t.category === '__fondo_empresa__') return false; // ocultar fondo empresa del historial
+                const esFondo = t.category === '__fondo_empresa__';
+                if (esFondo && !mostrarFondo) return false; // ocultar fondo empresa salvo toggle activo
                 const matchesSearch = t.description.toLowerCase().includes(searchQuery) || t.category.toLowerCase().includes(searchQuery);
                 const matchesType = filterType === "all" || t.type === filterType;
                 const matchesCategory = filterCat === "all" || t.category === filterCat;
@@ -3740,7 +3841,7 @@ document.addEventListener("DOMContentLoaded",function(){
                         </td>
                         <td class="p-4">
                             <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700/50">
-                                ${t.category}
+                                ${t.category === '__fondo_empresa__' ? '🏢 Fondo Empresa' : t.category}
                             </span>
                         </td>
                         <td class="p-4">
@@ -3752,9 +3853,14 @@ document.addEventListener("DOMContentLoaded",function(){
                             ${isIncome ? '+' : '-'} S/ ${parseFloat(t.amount).toFixed(2)}
                         </td>
                         <td class="p-4 text-center">
-                            <button onclick="deleteTransaction('${t.id}')" class="p-1.5 rounded-lg hover:bg-slate-800 text-rose-400 hover:text-rose-300 transition-colors">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                            <div style="display:flex;gap:4px;justify-content:center">
+                                <button onclick="abrirEditarTx('${t.id}')" class="p-1.5 rounded-lg hover:bg-slate-800 text-sky-400 hover:text-sky-300 transition-colors" title="Editar">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteTransaction('${t.id}')" class="p-1.5 rounded-lg hover:bg-slate-800 text-rose-400 hover:text-rose-300 transition-colors" title="Eliminar">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -3771,6 +3877,127 @@ document.addEventListener("DOMContentLoaded",function(){
                 AppState.transactions = AppState.transactions.filter(t => t.id !== id);
                 saveState();
             }
+        }
+
+        // ── EDITAR TRANSACCIÓN ────────────────────────────────────────────
+        let _editTxId = null;
+
+        function abrirEditarTx(id) {
+            const t = AppState.transactions.find(tx => tx.id === id);
+            if (!t) return;
+            _editTxId = id;
+
+            const isFondo = t.category === '__fondo_empresa__';
+
+            // Tipo
+            document.getElementById('edit-tx-tipo').value = isFondo ? 'fondo_empresa' : t.type;
+
+            // Monto
+            document.getElementById('edit-tx-monto').value = parseFloat(t.amount).toFixed(2);
+
+            // Fecha
+            document.getElementById('edit-tx-fecha').value = t.date || '';
+
+            // Descripción
+            document.getElementById('edit-tx-desc').value = t.description || '';
+
+            // Cuenta
+            document.getElementById('edit-tx-cuenta').value = t.account || 'efectivo';
+
+            // Categoría — poblar y seleccionar
+            poblarEditTxCats(isFondo ? 'fondo_empresa' : t.type, t.category);
+
+            // Título del modal
+            document.getElementById('edit-tx-titulo').textContent =
+                isFondo ? '🏢 Editar — Fondo Empresa' :
+                t.type === 'income' ? '💚 Editar Ingreso' : '💸 Editar Gasto';
+
+            openModal('modal-editar-tx');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function poblarEditTxCats(tipo, catActual) {
+            const sel = document.getElementById('edit-tx-categoria');
+            if (!sel) return;
+
+            if (tipo === 'fondo_empresa') {
+                sel.innerHTML = `<option value="__fondo_empresa__">🏢 Fondo Empresa</option>`;
+                sel.value = '__fondo_empresa__';
+                return;
+            }
+
+            const cats = tipo === 'income' ? getCatsIngreso() : getCatsGasto();
+            sel.innerHTML = cats.map(c =>
+                `<option value="${c.nombre}">${c.emoji} ${c.nombre}</option>`
+            ).join('');
+
+            // Incluir la categoría actual si no está en la lista (custom vieja)
+            if (catActual && catActual !== '__fondo_empresa__' && !cats.find(c => c.nombre === catActual)) {
+                sel.innerHTML += `<option value="${catActual}">${catActual}</option>`;
+            }
+            sel.value = catActual || (cats[0] ? cats[0].nombre : '');
+        }
+
+        function onEditTxTipoChange() {
+            const tipo = document.getElementById('edit-tx-tipo').value;
+            const t = AppState.transactions.find(tx => tx.id === _editTxId);
+            poblarEditTxCats(tipo, t ? t.category : '');
+
+            // Color del monto según tipo
+            const montoEl = document.getElementById('edit-tx-monto');
+            if (tipo === 'income') montoEl.style.color = '#34d399';
+            else if (tipo === 'fondo_empresa') montoEl.style.color = '#fbbf24';
+            else montoEl.style.color = '#f87171';
+
+            // Aviso fondo empresa
+            const avisoEl = document.getElementById('edit-tx-fondo-aviso');
+            if (avisoEl) avisoEl.style.display = tipo === 'fondo_empresa' ? 'block' : 'none';
+
+            // Título dinámico
+            const tituloEl = document.getElementById('edit-tx-titulo');
+            if (tituloEl) {
+                tituloEl.textContent =
+                    tipo === 'fondo_empresa' ? '🏢 Mover a Fondo Empresa' :
+                    tipo === 'income'        ? '💚 Editar Ingreso' :
+                                              '💸 Editar Gasto';
+            }
+        }
+
+        function guardarEditarTx() {
+            const t = AppState.transactions.find(tx => tx.id === _editTxId);
+            if (!t) return;
+
+            const tipo    = document.getElementById('edit-tx-tipo').value;
+            const monto   = parseFloat(document.getElementById('edit-tx-monto').value);
+            const fecha   = document.getElementById('edit-tx-fecha').value;
+            const desc    = document.getElementById('edit-tx-desc').value.trim();
+            const cuenta  = document.getElementById('edit-tx-cuenta').value;
+            const catSel  = document.getElementById('edit-tx-categoria').value;
+
+            if (isNaN(monto) || monto <= 0) { toast('Monto inválido', 'error'); return; }
+            if (!fecha) { toast('Ingresa una fecha', 'error'); return; }
+
+            if (tipo === 'fondo_empresa') {
+                t.type              = 'income';   // internamente income pero marcado
+                t.category          = '__fondo_empresa__';
+                t.esFondoEmpresa    = true;
+            } else {
+                t.type              = tipo;
+                t.category          = catSel;
+                t.esFondoEmpresa    = false;
+            }
+
+            t.amount      = monto;
+            t.date        = fecha;
+            t.description = desc || t.description;
+            t.account     = cuenta;
+
+            saveState();
+            closeModal('modal-editar-tx');
+            document.body.style.overflow = '';
+            renderHistoryTable();
+            renderFondoEmpresa();
+            toast('✅ Movimiento actualizado');
         }
 
         // ══════════════════════════════════════════════════════════════════
