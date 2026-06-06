@@ -1094,22 +1094,29 @@ document.addEventListener("DOMContentLoaded",function(){
         </div>
 
         <!-- VISTA RECURRENTES (MÓDULO 14 - SUSCRIPCIONES) -->
-        <div id="view-suscripciones" class="app-view hidden space-y-6">
-            <div class="premium-glass rounded-3xl p-6 custom-shadow">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold tracking-tight">Suscripciones & Gastos Recurrentes</h2>
-                        <p class="text-slate-400 text-sm">Visualiza tus compromisos mensuales recurrentes cargados de forma automática en tu Disponible Real.</p>
-                    </div>
-                    <button onclick="openModal('modal-suscripcion')" class="px-4 py-2.5 rounded-xl accent-bg hover:opacity-95 text-white font-semibold text-sm flex items-center transition-all shadow-lg">
-                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Agregar Suscripción
-                    </button>
-                </div>
+        <div id="view-suscripciones" class="app-view hidden space-y-5" style="padding-bottom:120px">
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="suscripciones-grid">
-                    <!-- Tarjetas de Suscripciones Inyectadas -->
+            <!-- Resumen total mensual -->
+            <div class="premium-glass rounded-3xl p-5 custom-shadow relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-5 blur-2xl" style="background:var(--accent)"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+                    <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase">Compromiso mensual total</span>
+                    <span id="fijos-badge-vencen" style="display:none;font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.25)">⚠️ Vencen hoy</span>
                 </div>
+                <div style="font-size:30px;font-weight:800;color:var(--accent)" id="fijos-total-mensual">S/ 0.00</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px">Suma de todos tus gastos fijos activos</div>
             </div>
+
+            <!-- Grid de gastos fijos -->
+            <div id="suscripciones-grid" style="display:flex;flex-direction:column;gap:12px">
+                <!-- inyectado -->
+            </div>
+
+            <!-- Botón agregar -->
+            <button onclick="openModal('modal-suscripcion')"
+                style="width:100%;padding:15px;border-radius:18px;background:var(--accent);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;opacity:.95">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i> Agregar Gasto Fijo
+            </button>
         </div>
 
         <!-- VISTA RETOS (MÓDULO 11 & 12) -->
@@ -1622,29 +1629,142 @@ document.addEventListener("DOMContentLoaded",function(){
     <!-- Modal Suscripción (Recurrentes) -->
     <div id="modal-suscripcion" class="modal-overlay hidden">
         <div class="modal-sheet premium-glass border border-slate-700/60 custom-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold">Nueva Suscripción Fija</h3>
-                <button onclick="closeModal('modal-suscripcion')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;color:#f1f5f9">🔄 Nuevo Gasto Fijo</h3>
+                    <p style="font-size:11px;color:#94a3b8;margin-top:2px">Se repite cada mes automáticamente</p>
+                </div>
+                <button onclick="closeModal('modal-suscripcion')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
             </div>
-            <form id="form-suscripcion" onsubmit="saveSuscripcion(event)">
-                <div class="space-y-4">
+            <div style="display:flex;flex-direction:column;gap:12px">
+                <!-- Emoji + nombre -->
+                <div style="display:flex;gap:10px;align-items:flex-end">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Nombre del Servicio</label>
-                        <input type="text" required id="sub-name" placeholder="Ej. Netflix, Spotify, Internet" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-1 accent-ring">
+                        <div style="font-size:10px;font-weight:600;color:#64748b;margin-bottom:5px">Ícono</div>
+                        <div id="sub-emoji-preview" onclick="toggleSubEmojiPicker()"
+                            style="width:50px;height:50px;border-radius:14px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">
+                            🔄
+                        </div>
                     </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
+                        <input type="text" id="sub-name" placeholder="Internet, Luz, Renta..."
+                            style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    </div>
+                </div>
+                <!-- Emoji picker -->
+                <div id="sub-emoji-picker" style="display:none;background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:10px">
+                    <div style="display:flex;flex-wrap:wrap;gap:4px">
+                        <span onclick="selectSubEmoji('📶')" class="emoji-opt">📶</span>
+                        <span onclick="selectSubEmoji('💡')" class="emoji-opt">💡</span>
+                        <span onclick="selectSubEmoji('🏠')" class="emoji-opt">🏠</span>
+                        <span onclick="selectSubEmoji('📱')" class="emoji-opt">📱</span>
+                        <span onclick="selectSubEmoji('💧')" class="emoji-opt">💧</span>
+                        <span onclick="selectSubEmoji('🔥')" class="emoji-opt">🔥</span>
+                        <span onclick="selectSubEmoji('🎬')" class="emoji-opt">🎬</span>
+                        <span onclick="selectSubEmoji('🎵')" class="emoji-opt">🎵</span>
+                        <span onclick="selectSubEmoji('🎮')" class="emoji-opt">🎮</span>
+                        <span onclick="selectSubEmoji('🏥')" class="emoji-opt">🏥</span>
+                        <span onclick="selectSubEmoji('🚗')" class="emoji-opt">🚗</span>
+                        <span onclick="selectSubEmoji('🏍️')" class="emoji-opt">🏍️</span>
+                        <span onclick="selectSubEmoji('💪')" class="emoji-opt">💪</span>
+                        <span onclick="selectSubEmoji('📦')" class="emoji-opt">📦</span>
+                        <span onclick="selectSubEmoji('🛡️')" class="emoji-opt">🛡️</span>
+                        <span onclick="selectSubEmoji('📚')" class="emoji-opt">📚</span>
+                    </div>
+                </div>
+                <!-- Monto -->
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto mensual (S/)</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="sub-cost"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f87171;font-size:20px;font-weight:700;outline:none;box-sizing:border-box">
+                </div>
+                <!-- Día de pago -->
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Fecha de pago (próximo vencimiento)</label>
+                    <input type="date" id="sub-due"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                </div>
+                <!-- Cuenta -->
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Cuenta desde donde se paga</label>
+                    <select id="sub-cuenta"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                        <option value="efectivo">💵 Efectivo</option>
+                        <option value="bcp">🏦 BCP</option>
+                        <option value="yape">📲 Yape</option>
+                        <option value="interbank">🏦 Interbank</option>
+                        <option value="bbva">🏦 BBVA</option>
+                        <option value="plin">📲 Plin</option>
+                    </select>
+                </div>
+                <button onclick="saveSuscripcion(event)"
+                    style="width:100%;padding:14px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer;margin-top:4px">
+                    ✅ Guardar Gasto Fijo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal editar gasto fijo -->
+    <div id="modal-editar-fijo" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-sky-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;color:#f1f5f9">✏️ Editar Gasto Fijo</h3>
+                </div>
+                <button onclick="closeModal('modal-editar-fijo');document.body.style.overflow=''"
+                    style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:10px;align-items:flex-end">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Costo Mensual (S/)</label>
-                        <input type="number" step="0.01" required id="sub-cost" inputmode="decimal" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-1 accent-ring">
+                        <div style="font-size:10px;font-weight:600;color:#64748b;margin-bottom:5px">Ícono</div>
+                        <div id="edit-fijo-emoji-preview"
+                            style="width:50px;height:50px;border-radius:14px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px">
+                            🔄
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Próximo Vencimiento / Pago</label>
-                        <input type="date" required id="sub-due" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-1 accent-ring">
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
+                        <input type="text" id="edit-fijo-name"
+                            style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
                     </div>
-                    <button type="submit" class="w-full py-3 rounded-xl accent-bg hover:opacity-95 text-white font-bold transition-all mt-2">
-                        Guardar Recurrente
+                </div>
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto (S/)</label>
+                    <input type="number" step="0.01" inputmode="decimal" id="edit-fijo-cost"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f87171;font-size:20px;font-weight:700;outline:none;box-sizing:border-box">
+                </div>
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Próximo vencimiento</label>
+                    <input type="date" id="edit-fijo-due"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                </div>
+                <div>
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Cuenta</label>
+                    <select id="edit-fijo-cuenta"
+                        style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none">
+                        <option value="efectivo">💵 Efectivo</option>
+                        <option value="bcp">🏦 BCP</option>
+                        <option value="yape">📲 Yape</option>
+                        <option value="interbank">🏦 Interbank</option>
+                        <option value="bbva">🏦 BBVA</option>
+                        <option value="plin">📲 Plin</option>
+                    </select>
+                </div>
+                <input type="hidden" id="edit-fijo-id">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+                    <button onclick="closeModal('modal-editar-fijo');document.body.style.overflow=''"
+                        style="padding:13px;border-radius:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:700;font-size:13px;cursor:pointer">
+                        Cancelar
+                    </button>
+                    <button onclick="guardarEditarFijo()"
+                        style="padding:13px;border-radius:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">
+                        ✅ Guardar
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -2593,6 +2713,8 @@ document.addEventListener("DOMContentLoaded",function(){
             if (viewId === 'view-configuracion') renderHistorialCobroViernes();
             // Refrescar sobres cuando se abre la vista
             if (viewId === 'view-sobres') renderSobres();
+            // Refrescar fijos cuando se abre la vista
+            if (viewId === 'view-suscripciones') renderSubscriptionsGrid();
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -4714,48 +4836,137 @@ document.addEventListener("DOMContentLoaded",function(){
 
         // MÓDULO 14: SUSCRIPCIONES & RECURRENTES
         function saveSuscripcion(event) {
-            event.preventDefault();
-            const name = document.getElementById("sub-name").value;
-            const cost = parseFloat(document.getElementById("sub-cost").value);
-            const due = document.getElementById("sub-due").value;
-
-            const newSub = {
-                id: Date.now().toString(),
-                name: name,
-                cost: cost,
-                due: due
-            };
-
-            AppState.subscriptions.push(newSub);
+            if (event) event.preventDefault();
+            const name   = document.getElementById('sub-name').value.trim();
+            const cost   = parseFloat(document.getElementById('sub-cost').value);
+            const due    = document.getElementById('sub-due').value;
+            const emoji  = document.getElementById('sub-emoji-preview').textContent.trim() || '🔄';
+            const cuenta = document.getElementById('sub-cuenta') ? document.getElementById('sub-cuenta').value : 'efectivo';
+            if (!name) { toast('Ingresa el nombre del gasto', 'error'); return; }
+            if (isNaN(cost) || cost <= 0) { toast('Ingresa un monto válido', 'error'); return; }
+            if (!due) { toast('Ingresa la fecha de vencimiento', 'error'); return; }
+            AppState.subscriptions.push({ id: Date.now().toString(), name, cost, due, emoji, cuenta });
             saveState();
-            closeModal("modal-suscripcion");
-            document.getElementById("form-suscripcion").reset();
+            closeModal('modal-suscripcion');
+            document.getElementById('sub-name').value = '';
+            document.getElementById('sub-cost').value = '';
+            document.getElementById('sub-due').value  = '';
+            document.getElementById('sub-emoji-preview').textContent = '🔄';
+            renderSubscriptionsGrid();
+            toast('✅ Gasto fijo guardado');
         }
 
         function renderSubscriptionsGrid() {
-            const grid = document.getElementById("suscripciones-grid");
+            const grid = document.getElementById('suscripciones-grid');
             if (!grid) return;
-            grid.innerHTML = "";
-
-            AppState.subscriptions.forEach(sub => {
-                grid.innerHTML += `
-                    <div class="premium-glass p-5 rounded-3xl border border-slate-800 flex flex-col justify-between">
-                        <div class="flex items-start justify-between">
-                            <div class="p-2.5 rounded-xl bg-slate-900 text-slate-400">
-                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                            </div>
-                            <span class="text-lg font-bold text-slate-100">S/ ${parseFloat(sub.cost).toFixed(2)}</span>
+            const today    = new Date(); today.setHours(0,0,0,0);
+            const todayStr = today.toISOString().split('T')[0];
+            const subs     = AppState.subscriptions || [];
+            const total    = subs.reduce((a,s) => a + parseFloat(s.cost||0), 0);
+            const totalEl  = document.getElementById('fijos-total-mensual');
+            if (totalEl) totalEl.textContent = 'S/ ' + total.toLocaleString('es-PE',{minimumFractionDigits:2});
+            const badgeEl  = document.getElementById('fijos-badge-vencen');
+            if (badgeEl) badgeEl.style.display = subs.some(s => s.due <= todayStr) ? 'inline-block' : 'none';
+            if (!subs.length) {
+                grid.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#475569"><div style="font-size:48px;margin-bottom:12px">🔄</div><div style="font-size:14px;font-weight:600;color:#64748b;margin-bottom:6px">Sin gastos fijos</div><div style="font-size:12px">Agrega internet, luz, renta, posPago...</div></div>`;
+                return;
+            }
+            const sorted = [...subs].sort((a,b) => new Date(a.due) - new Date(b.due));
+            grid.innerHTML = sorted.map(sub => {
+                const dueDate  = new Date(sub.due + 'T00:00:00');
+                const diffDays = Math.round((dueDate - today) / (1000*60*60*24));
+                const vencido  = diffDays < 0;
+                const hoy      = sub.due === todayStr;
+                const proximo  = diffDays >= 0 && diffDays <= 3;
+                const emoji    = sub.emoji || '🔄';
+                const cObj     = (typeof CUENTAS_CATALOG !== 'undefined' ? CUENTAS_CATALOG : []).find(c => c.id === (sub.cuenta||'efectivo')) || {icon:'💵',name:'Efectivo',color:'#84cc16'};
+                let lbl,col,bg;
+                if (vencido)       { lbl='⚠️ Vencido';           col='#f87171'; bg='rgba(239,68,68,0.15)'; }
+                else if (hoy)      { lbl='🔴 Vence HOY';          col='#fb923c'; bg='rgba(251,146,60,0.15)'; }
+                else if (proximo)  { lbl=`⏰ En ${diffDays} día${diffDays!==1?'s':''}`; col='#fbbf24'; bg='rgba(251,191,36,0.12)'; }
+                else               { lbl=`📅 En ${diffDays} días`; col='#94a3b8'; bg='rgba(255,255,255,0.05)'; }
+                const bdr = vencido ? '#ef4444' : hoy ? '#f97316' : proximo ? '#f59e0b' : '#1e293b';
+                return `<div style="background:var(--card-bg);border:1px solid ${bdr}40;border-radius:20px;padding:16px 18px;position:relative;overflow:hidden">
+                    <div style="position:absolute;top:-20px;right:-20px;width:70px;height:70px;border-radius:50%;background:${col};opacity:.06;pointer-events:none"></div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                        <div style="width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${emoji}</div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:15px;font-weight:800;color:#f1f5f9">${sub.name}</div>
+                            <div style="font-size:11px;color:#64748b;margin-top:1px"><span style="color:${cObj.color}">${cObj.icon} ${cObj.name}</span> · próx. <strong style="color:#94a3b8">${sub.due}</strong></div>
                         </div>
-                        <div class="mt-4">
-                            <h4 class="font-bold text-slate-200 text-sm">${sub.name}</h4>
-                            <span class="text-[11px] text-slate-400">Próxima renovación: ${sub.due}</span>
+                        <div style="text-align:right;flex-shrink:0">
+                            <div style="font-size:20px;font-weight:800;color:#f1f5f9">S/ ${parseFloat(sub.cost).toFixed(2)}</div>
+                            <div style="font-size:9px;color:#475569">mensual</div>
                         </div>
-                        <button onclick="deleteSuscripcion('${sub.id}')" class="mt-4 w-full py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs border border-rose-500/20 transition-all">
-                            Dar de Baja
-                        </button>
                     </div>
-                `;
+                    <div style="margin-bottom:12px"><span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:${bg};color:${col};border:1px solid ${col}30">${lbl}</span></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                        <button onclick="pagarFijo('${sub.id}')" style="padding:10px 6px;border-radius:12px;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.3);color:#34d399;font-weight:800;font-size:12px;cursor:pointer">✅ Pagar</button>
+                        <button onclick="abrirEditarFijo('${sub.id}')" style="padding:10px 6px;border-radius:12px;background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.25);color:#38bdf8;font-weight:700;font-size:12px;cursor:pointer">✏️ Editar</button>
+                        <button onclick="deleteSuscripcion('${sub.id}')" style="padding:10px 6px;border-radius:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;font-weight:700;font-size:12px;cursor:pointer">🗑 Baja</button>
+                    </div>
+                </div>`;
+            }).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function pagarFijo(id) {
+            const sub = AppState.subscriptions.find(s => s.id === id);
+            if (!sub) return;
+            const today = new Date().toISOString().split('T')[0];
+            AppState.transactions.unshift({
+                id: Date.now().toString(), date: today, type: 'expense',
+                category: (sub.emoji||'🔄') + ' ' + sub.name,
+                amount: parseFloat(sub.cost),
+                description: (sub.emoji||'🔄') + ' Pago fijo: ' + sub.name,
+                account: sub.cuenta || 'efectivo'
             });
+            const d = new Date(sub.due + 'T00:00:00');
+            d.setMonth(d.getMonth() + 1);
+            sub.due = d.toISOString().split('T')[0];
+            saveState();
+            renderSubscriptionsGrid();
+            toast('✅ S/ ' + parseFloat(sub.cost).toFixed(2) + ' pagado · próx. ' + sub.due);
+        }
+
+        let _editFijoId = null;
+        function abrirEditarFijo(id) {
+            const sub = AppState.subscriptions.find(s => s.id === id);
+            if (!sub) return;
+            _editFijoId = id;
+            document.getElementById('edit-fijo-id').value = id;
+            document.getElementById('edit-fijo-name').value = sub.name;
+            document.getElementById('edit-fijo-cost').value = parseFloat(sub.cost).toFixed(2);
+            document.getElementById('edit-fijo-due').value  = sub.due;
+            document.getElementById('edit-fijo-emoji-preview').textContent = sub.emoji || '🔄';
+            document.getElementById('edit-fijo-cuenta').value = sub.cuenta || 'efectivo';
+            openModal('modal-editar-fijo');
+            document.body.style.overflow = 'hidden';
+        }
+        function guardarEditarFijo() {
+            const sub = AppState.subscriptions.find(s => s.id === _editFijoId);
+            if (!sub) return;
+            const name = document.getElementById('edit-fijo-name').value.trim();
+            const cost = parseFloat(document.getElementById('edit-fijo-cost').value);
+            const due  = document.getElementById('edit-fijo-due').value;
+            const emoji = document.getElementById('edit-fijo-emoji-preview').textContent.trim() || '🔄';
+            const cuenta = document.getElementById('edit-fijo-cuenta').value;
+            if (!name || isNaN(cost) || cost <= 0 || !due) { toast('Completa todos los campos','error'); return; }
+            sub.name = name; sub.cost = cost; sub.due = due; sub.emoji = emoji; sub.cuenta = cuenta;
+            saveState();
+            closeModal('modal-editar-fijo');
+            document.body.style.overflow = '';
+            renderSubscriptionsGrid();
+            toast('✅ Gasto fijo actualizado');
+        }
+        function toggleSubEmojiPicker() {
+            const el = document.getElementById('sub-emoji-picker');
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+        function selectSubEmoji(emoji) {
+            document.getElementById('sub-emoji-preview').textContent = emoji;
+            const el = document.getElementById('sub-emoji-picker');
+            if (el) el.style.display = 'none';
         }
 
         // ══════════════════════════════════════════════════════════════════
