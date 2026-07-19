@@ -93,6 +93,10 @@
         .hidden { display: none !important; }
 
         /* ── Modales (bottom-sheet seguro en Android) ─────────────────── */
+        @keyframes toastIn { from { opacity:0; transform:translateY(-10px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+        .compras-tab-btn { flex:1; padding:9px 4px; border-radius:12px; font-size:12px; font-weight:700; border:1px solid transparent; background:transparent; color:#94a3b8; cursor:pointer; transition:all .2s; }
+        .compras-tab-btn.active { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.3); color:#4ade80; }
+
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,.6);
@@ -574,6 +578,15 @@ document.addEventListener("DOMContentLoaded",function(){
                 </button>
             </div>
 
+            <!-- GASTOS RÁPIDOS DE 1 TOQUE -->
+            <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <span style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase">⚡ Gastos Rápidos</span>
+                    <button onclick="abrirGestorRapidos()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:5px 10px;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer">⚙️ Editar</button>
+                </div>
+                <div id="gastos-rapidos-chips" style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px"></div>
+            </div>
+
             <!-- SECCIÓN 1: BALANCE GENERAL & DISPONIBLE REAL -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Tarjeta Principal de Balance Premium -->
@@ -582,7 +595,7 @@ document.addEventListener("DOMContentLoaded",function(){
                     <div>
                         <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
                             <span>Balance General Estimado</span>
-                            <i data-lucide="info" class="w-4 h-4 cursor-pointer" onclick="alert('Tu balance calculado con base en ingresos registrados menos gastos totales.')"></i>
+                            <i data-lucide="info" class="w-4 h-4 cursor-pointer" onclick="toast('Balance = ingresos registrados menos gastos totales')"></i>
                         </div>
                         <h2 class="text-4xl font-extrabold tracking-tight mt-1" id="balance-total">S/ 0.00</h2>
                     </div>
@@ -937,7 +950,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full accent-bg opacity-5 blur-2xl"></div>
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Patrimonio Total Consolidado</span>
-                    <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-pointer" onclick="alert('Suma de saldos iniciales más todos los movimientos registrados por cuenta.')"></i>
+                    <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-pointer" onclick="toast('Suma de saldos iniciales más movimientos por cuenta')"></i>
                 </div>
                 <h2 class="text-4xl font-extrabold accent-text tracking-tight" id="cuentas-total">S/ 0.00</h2>
                 <p class="text-xs text-slate-400 mt-1">Saldo inicial + ingresos − gastos por cada cuenta</p>
@@ -2511,6 +2524,60 @@ document.addEventListener("DOMContentLoaded",function(){
             </button>
         </div>
 
+
+        <!-- ══ VISTA LISTA DE COMPRAS ══ -->
+        <div id="view-compras" class="app-view hidden space-y-5" style="padding-bottom:140px">
+
+            <div class="premium-glass rounded-3xl p-5 custom-shadow relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-5 blur-2xl" style="background:#22c55e"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <div>
+                        <div style="font-size:10px;font-weight:700;color:#4ade80;letter-spacing:.5px;text-transform:uppercase">🛒 Lista de Compras</div>
+                        <div style="font-size:26px;font-weight:800;color:#f1f5f9;margin-top:2px"><span id="compras-total-comprado">S/ 0.00</span></div>
+                        <div style="font-size:11px;color:#64748b;margin-top:2px">de <span id="compras-total-estimado">S/ 0.00</span> estimado · <span id="compras-count-items">0 productos</span></div>
+                    </div>
+                    <div style="font-size:32px">🛒</div>
+                </div>
+                <div style="margin-top:12px;height:8px;border-radius:99px;background:rgba(255,255,255,0.06);overflow:hidden">
+                    <div id="compras-barra" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .4s"></div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:5px">
+                <button id="compras-tab-lista" class="compras-tab-btn active" onclick="setComprasTab('lista')">🛒 Lista</button>
+                <button id="compras-tab-biblioteca" class="compras-tab-btn" onclick="setComprasTab('biblioteca')">📦 Biblioteca</button>
+                <button id="compras-tab-historial" class="compras-tab-btn" onclick="setComprasTab('historial')">📜 Historial</button>
+            </div>
+
+            <div id="compras-panel-lista">
+                <div id="compras-lista-items" style="display:flex;flex-direction:column;gap:8px"></div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+                    <button onclick="abrirAgregarProducto('lista')"
+                        style="width:100%;padding:14px;border-radius:16px;background:rgba(34,197,94,0.1);border:1px dashed rgba(34,197,94,0.4);color:#4ade80;font-weight:800;font-size:13px;cursor:pointer">
+                        ➕ Agregar producto
+                    </button>
+                    <button id="btn-repetir-compra" onclick="repetirUltimaCompra()" style="display:none;width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;font-size:12px;cursor:pointer">
+                        🔁 Repetir última compra
+                    </button>
+                    <button id="btn-cerrar-compras" onclick="abrirCerrarCompras()" style="display:none;width:100%;padding:15px;border-radius:18px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer;box-shadow:0 6px 24px rgba(34,197,94,0.25)">
+                        ✅ Terminé mis compras
+                    </button>
+                </div>
+            </div>
+
+            <div id="compras-panel-biblioteca" style="display:none">
+                <div id="compras-biblioteca-list" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button onclick="abrirAgregarProducto('biblioteca')"
+                    style="width:100%;padding:14px;border-radius:16px;background:rgba(34,197,94,0.1);border:1px dashed rgba(34,197,94,0.4);color:#4ade80;font-weight:800;font-size:13px;cursor:pointer;margin-top:14px">
+                    ➕ Nuevo producto
+                </button>
+            </div>
+
+            <div id="compras-panel-historial" style="display:none">
+                <div id="compras-historial-list" style="display:flex;flex-direction:column;gap:10px"></div>
+            </div>
+        </div>
+
     </main>
 
     <!-- ══ MODAL NUEVA DEUDA ══ -->
@@ -2714,6 +2781,222 @@ document.addEventListener("DOMContentLoaded",function(){
         </div>
     </div>
 
+    <!-- ══ MODAL AGREGAR PRODUCTO A LISTA / BIBLIOTECA ══ -->
+    <div id="modal-agregar-producto" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-green-500/30 custom-shadow" style="overflow-y:auto">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div>
+                    <h3 style="font-size:16px;font-weight:800;color:#86efac">🛒 Agregar producto</h3>
+                    <p id="agregar-prod-sub" style="font-size:11px;color:#94a3b8;margin-top:2px">Toca un producto para sumarlo a tu lista</p>
+                </div>
+                <button onclick="cerrarModalCompras('modal-agregar-producto')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+
+            <div id="agregar-prod-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
+
+            <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:14px">
+                <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:10px">➕ CREAR PRODUCTO NUEVO</div>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <div style="width:64px">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Emoji</label>
+                        <input type="text" id="nuevo-prod-emoji" placeholder="🍗" maxlength="4" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 8px;color:#f1f5f9;font-size:16px;text-align:center;outline:none;box-sizing:border-box">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
+                        <input type="text" id="nuevo-prod-nombre" placeholder="Ej. Pollo, Arroz, Aceite..." style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio (S/)</label>
+                        <input type="number" step="0.10" min="0" id="nuevo-prod-precio" placeholder="7.00" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Unidad</label>
+                        <select id="nuevo-prod-unidad" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                            <option value="kg">kg</option>
+                            <option value="und">unidad</option>
+                            <option value="paq">paquete</option>
+                            <option value="lt">litro</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="crearProducto()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">
+                    ✅ Guardar producto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MODAL EDITAR PRODUCTO (BIBLIOTECA) ══ -->
+    <div id="modal-editar-producto" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-green-500/30 custom-shadow" style="overflow-y:auto">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:16px;font-weight:800;color:#86efac" id="edit-prod-titulo">📦 Editar producto</h3>
+                <button onclick="cerrarModalCompras('modal-editar-producto')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+                <div style="width:64px">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Emoji</label>
+                    <input type="text" id="edit-prod-emoji" maxlength="4" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 8px;color:#f1f5f9;font-size:16px;text-align:center;outline:none;box-sizing:border-box">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
+                    <input type="text" id="edit-prod-nombre" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <div style="flex:1">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio actual (S/)</label>
+                    <input type="number" step="0.10" min="0" id="edit-prod-precio" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Unidad</label>
+                    <select id="edit-prod-unidad" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                        <option value="kg">kg</option>
+                        <option value="und">unidad</option>
+                        <option value="paq">paquete</option>
+                        <option value="lt">litro</option>
+                    </select>
+                </div>
+            </div>
+            <div id="edit-prod-historial" style="margin-bottom:14px"></div>
+            <button onclick="guardarProductoEditado()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer;margin-bottom:10px">
+                💾 Guardar cambios
+            </button>
+            <button onclick="eliminarProductoActual()" style="width:100%;padding:10px;border-radius:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;font-weight:700;font-size:12px;cursor:pointer">
+                🗑 Eliminar producto
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ MODAL CERRAR COMPRAS ══ -->
+    <div id="modal-cerrar-compras" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-green-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:16px;font-weight:800;color:#86efac">✅ Cerrar compras</h3>
+                <button onclick="cerrarModalCompras('modal-cerrar-compras')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:16px;padding:16px;text-align:center;margin-bottom:14px">
+                <div style="font-size:11px;color:#94a3b8">Total de productos comprados</div>
+                <div style="font-size:30px;font-weight:800;color:#4ade80;margin:4px 0" id="cerrar-compras-total">S/ 0.00</div>
+                <div style="font-size:11px;color:#64748b" id="cerrar-compras-detalle">0 comprados · 0 quedaron pendientes</div>
+            </div>
+            <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">¿De qué cuenta salió el dinero?</label>
+            <select id="cerrar-compras-cuenta" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:14px"></select>
+            <button onclick="confirmarCierreCompras()" style="width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer">
+                💸 Registrar gasto y archivar lista
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ MODAL EDITAR PRECIO DE ITEM ══ -->
+    <div id="modal-precio-item" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-green-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:16px;font-weight:800;color:#86efac" id="precio-item-titulo">💰 Actualizar precio</h3>
+                <button onclick="cerrarModalCompras('modal-precio-item')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <p style="font-size:11px;color:#94a3b8;margin-bottom:10px">El precio nuevo se guarda también en tu biblioteca y en el historial de precios.</p>
+            <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio de hoy (S/)</label>
+            <input type="number" step="0.10" min="0" id="precio-item-input" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:16px;outline:none;box-sizing:border-box;margin-bottom:14px">
+            <button onclick="guardarPrecioItem()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">
+                ✅ Actualizar precio
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ MODAL CONFIRMACIÓN GENÉRICA ══ -->
+    <div id="modal-confirm" class="modal-overlay hidden" style="z-index:60">
+        <div class="modal-sheet premium-glass border border-rose-500/30 custom-shadow">
+            <h3 style="font-size:16px;font-weight:800;color:#fda4af;margin-bottom:8px" id="confirm-titulo">¿Estás seguro?</h3>
+            <p style="font-size:13px;color:#94a3b8;margin-bottom:18px;line-height:1.5" id="confirm-msg"></p>
+            <div style="display:flex;gap:10px">
+                <button onclick="cerrarModalCompras('modal-confirm')" style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-weight:700;font-size:13px;cursor:pointer">Cancelar</button>
+                <button onclick="_confirmYes()" id="confirm-btn-si" style="flex:1;padding:13px;border-radius:14px;background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">Sí, continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MODAL GASTO RÁPIDO ══ -->
+    <div id="modal-gasto-rapido" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-amber-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:16px;font-weight:800;color:#fcd34d" id="gr-titulo">⚡ Gasto rápido</h3>
+                <button onclick="cerrarModalCompras('modal-gasto-rapido')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <div style="flex:1">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto (S/)</label>
+                    <input type="number" step="0.10" min="0" id="gr-monto" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:16px;outline:none;box-sizing:border-box">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Cuenta</label>
+                    <select id="gr-cuenta" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box"></select>
+                </div>
+            </div>
+            <button onclick="confirmarGastoRapido()" style="width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:14px;border:none;cursor:pointer">
+                ⚡ Registrar gasto
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ MODAL GESTOR GASTOS RÁPIDOS ══ -->
+    <div id="modal-gestor-rapidos" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-amber-500/30 custom-shadow" style="overflow-y:auto">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:16px;font-weight:800;color:#fcd34d">⚙️ Mis gastos rápidos</h3>
+                <button onclick="cerrarModalCompras('modal-gestor-rapidos')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <div id="gestor-rapidos-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+            <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:14px">
+                <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:10px">➕ AGREGAR NUEVO</div>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <div style="width:64px">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Emoji</label>
+                        <input type="text" id="gr-nuevo-emoji" placeholder="⛽" maxlength="4" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 8px;color:#f1f5f9;font-size:16px;text-align:center;outline:none;box-sizing:border-box">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
+                        <input type="text" id="gr-nuevo-nombre" placeholder="Ej. Gasolina, Menú..." style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Monto (S/)</label>
+                        <input type="number" step="0.10" min="0" id="gr-nuevo-monto" placeholder="20.00" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Categoría</label>
+                        <select id="gr-nuevo-cat" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box"></select>
+                    </div>
+                </div>
+                <div style="margin-bottom:14px">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Cuenta por defecto</label>
+                    <select id="gr-nuevo-cuenta" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box"></select>
+                </div>
+                <button onclick="crearGastoRapido()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">
+                    ✅ Guardar gasto rápido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MODAL FECHA COBRO MANUAL ══ -->
+    <div id="modal-fecha-cobro" class="modal-overlay hidden">
+        <div class="modal-sheet premium-glass border border-violet-500/30 custom-shadow">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:16px;font-weight:800;color:#c4b5fd">💸 Registrar cobro</h3>
+                <button onclick="cerrarModalCompras('modal-fecha-cobro')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
+            </div>
+            <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">¿De qué fecha es el cobro?</label>
+            <input type="date" id="fecha-cobro-input" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:14px">
+            <button onclick="confirmarCobroManual()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">
+                ✅ Registrar cobro
+            </button>
+        </div>
+    </div>
+
     <!-- PERSISTENT PREMIUM BOTTOM NAVIGATION (Mobile-Ready) -->
     <nav style="position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--card-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgba(30,41,59,.8);padding:6px 4px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));display:flex;overflow-x:auto;gap:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
         <button onclick="switchView('view-dashboard')" id="nav-dashboard" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all nav-active" style="min-width:56px;flex-shrink:0">
@@ -2751,6 +3034,10 @@ document.addEventListener("DOMContentLoaded",function(){
         <button onclick="switchView('view-sobres')" id="nav-sobres" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all" style="min-width:56px;flex-shrink:0">
             <span style="font-size:18px;margin-bottom:2px">✉️</span>
             <span class="text-[10px] font-semibold">Sobres</span>
+        </button>
+        <button onclick="switchView('view-compras')" id="nav-compras" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all" style="min-width:56px;flex-shrink:0">
+            <i data-lucide="shopping-cart" class="w-5 h-5 mb-1"></i>
+            <span class="text-[10px] font-semibold">Compras</span>
         </button>
         <button onclick="switchView('view-deudas')" id="nav-deudas" class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl text-slate-400 hover:text-slate-100 transition-all" style="min-width:56px;flex-shrink:0">
             <span style="font-size:18px;margin-bottom:2px">💳</span>
@@ -2814,6 +3101,10 @@ document.addEventListener("DOMContentLoaded",function(){
             sobreMovs: [],
             deudas: [],
             deudaMovs: [],
+            productos: [],
+            listaCompras: { items: [], creada: null },
+            comprasHist: [],
+            gastosRapidos: [],
             theme: {
                 accent:      "#10b981",
                 name:        "emerald",
@@ -2895,6 +3186,14 @@ document.addEventListener("DOMContentLoaded",function(){
             AppState.sobreMovs       = JSON.parse(localStorage.getItem("wallettrack_sobre_movs")) || [];
             AppState.deudas          = JSON.parse(localStorage.getItem("wallettrack_deudas"))  || [];
             AppState.deudaMovs       = JSON.parse(localStorage.getItem("wallettrack_deuda_movs")) || [];
+            AppState.productos       = JSON.parse(localStorage.getItem("wallettrack_productos")) || [];
+            AppState.listaCompras    = JSON.parse(localStorage.getItem("wallettrack_lista_compras")) || { items: [], creada: new Date().toISOString().split('T')[0] };
+            AppState.comprasHist     = JSON.parse(localStorage.getItem("wallettrack_compras_hist")) || [];
+            const _grRaw = localStorage.getItem("wallettrack_gastos_rapidos");
+            AppState.gastosRapidos   = _grRaw ? JSON.parse(_grRaw) : [
+                { id: 'gr_gasolina', emoji: '⛽', nombre: 'Gasolina', monto: 20, categoria: 'Combustible',  cuenta: 'efectivo' },
+                { id: 'gr_menu',     emoji: '🍔', nombre: 'Menú',     monto: 12, categoria: 'Alimentación', cuenta: 'efectivo' }
+            ];
 
             // Rellenar inputs de fecha del día de hoy
             const today = new Date().toISOString().split('T')[0];
@@ -2918,6 +3217,10 @@ document.addEventListener("DOMContentLoaded",function(){
             localStorage.setItem("wallettrack_sobre_movs",    JSON.stringify(AppState.sobreMovs || []));
             localStorage.setItem("wallettrack_deudas",        JSON.stringify(AppState.deudas || []));
             localStorage.setItem("wallettrack_deuda_movs",    JSON.stringify(AppState.deudaMovs || []));
+            localStorage.setItem("wallettrack_productos",     JSON.stringify(AppState.productos || []));
+            localStorage.setItem("wallettrack_lista_compras", JSON.stringify(AppState.listaCompras || { items: [] }));
+            localStorage.setItem("wallettrack_compras_hist",  JSON.stringify(AppState.comprasHist || []));
+            localStorage.setItem("wallettrack_gastos_rapidos",JSON.stringify(AppState.gastosRapidos || []));
 
             triggerSyncBadge();
             refreshAllUI();
@@ -2956,6 +3259,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 "view-configuracion": "nav-configuracion",
                 "view-sobres":        "nav-sobres",
                 "view-deudas":        "nav-deudas",
+                "view-compras":       "nav-compras",
                 "view-retos":         "nav-dashboard"
             }[viewId];
 
@@ -2971,6 +3275,8 @@ document.addEventListener("DOMContentLoaded",function(){
             if (viewId === 'view-deudas') renderDeudas();
             // Refrescar fijos cuando se abre la vista
             if (viewId === 'view-suscripciones') renderSubscriptionsGrid();
+            // Refrescar compras cuando se abre la vista
+            if (viewId === 'view-compras') renderCompras();
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -3237,10 +3543,11 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function deleteMeta(id) {
-            if(confirm("¿Estás seguro de eliminar este objetivo financiero?")) {
+            askConfirm('🗑 Eliminar meta', '¿Estás seguro de eliminar este objetivo financiero?', 'Sí, eliminar', () => {
                 AppState.goals = AppState.goals.filter(g => g.id !== id);
                 saveState();
-            }
+                toast('Meta eliminada');
+            });
         }
 
         // MÓDULO 6: DASHBOARD INTELIGENTE (CHART.JS)
@@ -4061,25 +4368,51 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function resetTotal() {
-            if (!confirm('¿Seguro? Esto borrará TODAS las transacciones, saldos y datos. No se puede deshacer.')) return;
-            const keys = [
-                'wallettrack_transactions','wallettrack_goals','wallettrack_subscriptions',
-                'wallettrack_challenges','wallettrack_saldos','wallettrack_budgets',
-                'wallettrack_cardcustom'
-            ];
-            keys.forEach(k => localStorage.removeItem(k));
-            AppState.transactions = [];
-            AppState.goals = [];
-            AppState.subscriptions = [];
-            AppState.challenges = [];
-            AppState.saldosIniciales = { bcp:0, interbank:0, bbva:0, yape:0, plin:0, efectivo:0 };
-            AppState.cardCustom = {};
-            AppState.budgets = [];
-            saveState();
-            refreshAllUI();
-            renderCuentas();
-            renderSaldosForm();
-            toast('✅ Todo reiniciado a cero', 'success');
+            askConfirm('🗑 Reiniciar WalletTrack',
+                'Esto borrará TODAS tus transacciones, saldos, sobres, deudas, presupuestos, metas, gastos fijos y compras. Tu PIN, tema y configuración de Firebase se mantienen. No se puede deshacer.',
+                'Sí, borrar todo', () => {
+                const keys = [
+                    'wallettrack_transactions','wallettrack_goals','wallettrack_subscriptions',
+                    'wallettrack_challenges','wallettrack_saldos','wallettrack_budgets',
+                    'wallettrack_cards','wallettrack_cat_gasto','wallettrack_cat_ingreso',
+                    'wallettrack_sobres','wallettrack_sobre_movs',
+                    'wallettrack_deudas','wallettrack_deuda_movs',
+                    'wallettrack_productos','wallettrack_lista_compras','wallettrack_compras_hist',
+                    'wallettrack_gastos_rapidos'
+                ];
+                keys.forEach(k => localStorage.removeItem(k));
+                AppState.transactions = [];
+                AppState.goals = [];
+                AppState.subscriptions = [];
+                AppState.challenges = [];
+                AppState.saldosIniciales = { bcp:0, interbank:0, bbva:0, yape:0, plin:0, efectivo:0 };
+                AppState.cardCustom = {};
+                AppState.budgets = [];
+                AppState.categoriasGasto = [];
+                AppState.categoriasIngreso = [];
+                AppState.sobres = [];
+                AppState.sobreMovs = [];
+                AppState.deudas = [];
+                AppState.deudaMovs = [];
+                AppState.productos = [];
+                AppState.listaCompras = { items: [], creada: hoyISO() };
+                AppState.comprasHist = [];
+                AppState.gastosRapidos = [
+                    { id: 'gr_gasolina', emoji: '⛽', nombre: 'Gasolina', monto: 20, categoria: 'Combustible',  cuenta: 'efectivo' },
+                    { id: 'gr_menu',     emoji: '🍔', nombre: 'Menú',     monto: 12, categoria: 'Alimentación', cuenta: 'efectivo' }
+                ];
+                saveState();
+                poblarSelectCats();
+                refreshAllUI();
+                renderCuentas();
+                renderSaldosForm();
+                renderSobres();
+                renderDeudas();
+                renderFondoEmpresa();
+                renderGastosRapidos();
+                if (document.getElementById('compras-lista-items')) renderCompras();
+                toast('✅ WalletTrack reiniciado a cero. Registra tus saldos reales en Cuentas.');
+            });
         }
 
         // ── CATEGORÍAS PERSONALIZADAS ──────────────────────────────
@@ -4223,11 +4556,11 @@ document.addEventListener("DOMContentLoaded",function(){
             const monto = parseFloat(document.getElementById("transfer-monto").value);
 
             if (!from || !to || isNaN(monto) || monto <= 0) return;
-            if (from === to) { alert("La cuenta origen y destino no pueden ser la misma."); return; }
+            if (from === to) { toast('La cuenta origen y destino no pueden ser la misma', 'error'); return; }
 
             const saldoOrigen = getSaldoCuenta(from);
             if (saldoOrigen < monto) {
-                alert(`Saldo insuficiente en ${CUENTAS_CATALOG.find(c=>c.id===from)?.name}. Disponible: S/ ${saldoOrigen.toFixed(2)}`);
+                toast(`Saldo insuficiente en ${CUENTAS_CATALOG.find(c=>c.id===from)?.name}. Disponible: S/ ${saldoOrigen.toFixed(2)}`, 'error');
                 return;
             }
 
@@ -4324,10 +4657,11 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function deleteTransaction(id) {
-            if(confirm("¿Estás seguro de eliminar este movimiento financiero?")) {
+            askConfirm('🗑 Eliminar movimiento', '¿Estás seguro de eliminar este movimiento financiero?', 'Sí, eliminar', () => {
                 AppState.transactions = AppState.transactions.filter(t => t.id !== id);
                 saveState();
-            }
+                toast('Movimiento eliminado');
+            });
         }
 
         // ── EDITAR TRANSACCIÓN ────────────────────────────────────────────
@@ -4602,7 +4936,7 @@ document.addEventListener("DOMContentLoaded",function(){
         // ══════════════════════════════════════════════════════════════════
         function exportExcel() {
             if (typeof ExcelJS === 'undefined') {
-                alert('ExcelJS cargando, espera 2 segundos e intenta de nuevo.');
+                toast('ExcelJS cargando, espera 2 segundos e intenta de nuevo', 'error');
                 return;
             }
 
@@ -4877,13 +5211,13 @@ document.addEventListener("DOMContentLoaded",function(){
                 compartirArchivo(blob, nom, 'WalletTrack Excel', _anchor);
             }).catch(function(e){
                 document.body.removeChild(_anchor);
-                alert('Error generando Excel: '+e.message);
+                toast('Error generando Excel: '+e.message, 'error');
             });
         }
 
         
         function exportPDF() {
-            if (typeof window.jspdf === 'undefined') { alert('jsPDF aún no ha cargado. Verifica tu conexión.'); return; }
+            if (typeof window.jspdf === 'undefined') { toast('jsPDF aún no ha cargado. Verifica tu conexión', 'error'); return; }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const ahora = new Date();
@@ -5028,8 +5362,8 @@ document.addEventListener("DOMContentLoaded",function(){
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (!data.transactions) { alert('Archivo inválido. No parece un backup de WalletTrack.'); return; }
-                    if (!confirm('¿Importar backup? Esto reemplazará todos tus datos actuales.')) return;
+                    if (!data.transactions) { toast('Archivo inválido. No parece un backup de WalletTrack', 'error'); return; }
+                    askConfirm('📥 Importar backup', 'Esto reemplazará todos tus datos actuales con los del archivo. ¿Continuar?', 'Sí, importar', () => {
                     if (data.transactions)  AppState.transactions  = data.transactions;
                     if (data.goals)         AppState.goals         = data.goals;
                     if (data.subscriptions) AppState.subscriptions = data.subscriptions;
@@ -5044,10 +5378,10 @@ document.addEventListener("DOMContentLoaded",function(){
                     renderHistoryTable();
                     renderGoalsGrid();
                     poblarSelectCats();
-                    if(typeof toast==='function') toast('✅ Backup importado correctamente', 'success');
-                    else alert('✅ Backup importado correctamente');
+                    toast('✅ Backup importado correctamente');
+                    });
                 } catch(err) {
-                    alert('Error al leer el archivo: ' + err.message);
+                    toast('Error al leer el archivo: ' + err.message, 'error');
                 }
             };
             reader.readAsText(file);
@@ -5342,10 +5676,11 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function deleteBudget(id) {
-            if (confirm('¿Eliminar este presupuesto?')) {
+            askConfirm('🗑 Eliminar presupuesto', '¿Eliminar este presupuesto?', 'Sí, eliminar', () => {
                 AppState.budgets = AppState.budgets.filter(b => b.id !== id);
                 saveState();
-            }
+                toast('Presupuesto eliminado');
+            });
         }
 
         function renderBudgets() {
@@ -5561,10 +5896,11 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function deleteSuscripcion(id) {
-            if(confirm("¿Estás seguro de cancelar esta suscripción recurrente?")) {
+            askConfirm('🗑 Cancelar gasto fijo', '¿Estás seguro de cancelar esta suscripción recurrente?', 'Sí, cancelar', () => {
                 AppState.subscriptions = AppState.subscriptions.filter(s => s.id !== id);
                 saveState();
-            }
+                toast('Suscripción cancelada');
+            });
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -6143,12 +6479,13 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         function deletePin() {
-            if (confirm('¿Estás seguro de eliminar el PIN? La app quedará sin protección.')) {
+            askConfirm('🔓 Eliminar PIN', '¿Estás seguro de eliminar el PIN? La app quedará sin protección.', 'Sí, eliminar', () => {
                 AppState.security.pinEnabled = false;
                 AppState.security.pinHash    = null;
                 saveState();
                 _refreshPinSetupUI();
-            }
+                toast('PIN eliminado');
+            });
         }
 
         function toggleAutoLock() {
@@ -6206,21 +6543,21 @@ document.addEventListener("DOMContentLoaded",function(){
         function saveFirebaseConfig() {
             const configText = document.getElementById("firebase-config").value;
             if(!configText) {
-                alert("Por favor inserta credenciales válidas.");
+                toast('Por favor inserta credenciales válidas', 'error');
                 return;
             }
             try {
                 JSON.parse(configText);
-                alert("Verificando integración con Firebase Firestore... Conexión Establecida.");
+                toast('✅ Configuración de Firebase guardada');
                 triggerSyncBadge();
             } catch (e) {
-                alert("Error: Estructura JSON no válida.");
+                toast('Error: Estructura JSON no válida', 'error');
             }
         }
 
         // RESET DE DATOS
         function resetData() {
-            if(confirm("¿Estás seguro de resetear por completo WalletTrack? Perderás todos tus movimientos cargados.")) {
+            askConfirm('♻️ Restaurar demo', '¿Estás seguro de resetear por completo WalletTrack? Perderás todos tus movimientos cargados.', 'Sí, restaurar', () => {
                 localStorage.setItem("wallettrack_transactions",  JSON.stringify(DEFAULT_TRANSACTIONS));
                 localStorage.setItem("wallettrack_goals",         JSON.stringify(DEFAULT_METAS));
                 localStorage.setItem("wallettrack_subscriptions", JSON.stringify(DEFAULT_SUBSCRIPCIONES));
@@ -6230,8 +6567,9 @@ document.addEventListener("DOMContentLoaded",function(){
                 localStorage.setItem("wallettrack_cards",         JSON.stringify({}));
                 localStorage.setItem("wallettrack_budgets",       JSON.stringify(DEFAULT_BUDGETS));
                 loadState();
-                alert("Restauración Completa exitosa. Datos demo recargados.");
-            }
+                refreshAllUI();
+                toast('✅ Restauración completa. Datos demo recargados.');
+            });
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -6436,14 +6774,15 @@ document.addEventListener("DOMContentLoaded",function(){
         function eliminarSobreActual() {
             const sobre = getSobreById(_sobreActivoId);
             if (!sobre) return;
-            if (!confirm('¿Eliminar el sobre "' + sobre.nombre + '"? Los movimientos del sobre también se borrarán.')) return;
-            AppState.sobres = (AppState.sobres || []).filter(s => s.id !== _sobreActivoId);
-            AppState.sobreMovs = (AppState.sobreMovs || []).filter(m => m.sobreId !== _sobreActivoId);
-            saveState();
             closeModal('modal-gastar-sobre');
             document.body.style.overflow = '';
-            renderSobres();
-            toast('🗑 Sobre eliminado');
+            askConfirm('🗑 Eliminar sobre', '¿Eliminar el sobre "' + sobre.nombre + '"? Los movimientos del sobre también se borrarán.', 'Sí, eliminar', () => {
+                AppState.sobres = (AppState.sobres || []).filter(s => s.id !== _sobreActivoId);
+                AppState.sobreMovs = (AppState.sobreMovs || []).filter(m => m.sobreId !== _sobreActivoId);
+                saveState();
+                renderSobres();
+                toast('🗑 Sobre eliminado');
+            });
         }
 
         // ── Tabs del modal ─────────────────────────────────────────────────
@@ -6858,14 +7197,15 @@ document.addEventListener("DOMContentLoaded",function(){
         function eliminarDeudaActual() {
             const d = getDeudaById(_deudaActivaId);
             if (!d) return;
-            if (!confirm('¿Eliminar la deuda "' + d.nombre + '"?')) return;
-            AppState.deudas    = (AppState.deudas    || []).filter(x => x.id !== _deudaActivaId);
-            AppState.deudaMovs = (AppState.deudaMovs || []).filter(m => m.deudaId !== _deudaActivaId);
-            saveState();
             closeModal('modal-detalle-deuda');
             document.body.style.overflow = '';
-            renderDeudas();
-            toast('🗑 Deuda eliminada');
+            askConfirm('🗑 Eliminar deuda', '¿Eliminar la deuda "' + d.nombre + '"?', 'Sí, eliminar', () => {
+                AppState.deudas    = (AppState.deudas    || []).filter(x => x.id !== _deudaActivaId);
+                AppState.deudaMovs = (AppState.deudaMovs || []).filter(m => m.deudaId !== _deudaActivaId);
+                saveState();
+                renderDeudas();
+                toast('🗑 Deuda eliminada');
+            });
         }
 
         // ── Tabs del modal ────────────────────────────────────────────────
@@ -7129,9 +7469,11 @@ document.addEventListener("DOMContentLoaded",function(){
 
             let fecha = new Date().toISOString().split('T')[0];
             if (manual) {
-                const input = prompt('¿Qué fecha pongo? (YYYY-MM-DD)', fecha);
-                if (!input) return;
-                fecha = input.trim();
+                // Regla de Oro: nada de prompt() en Capacitor — modal con date input
+                document.getElementById('fecha-cobro-input').value = fecha;
+                openModal('modal-fecha-cobro');
+                document.body.style.overflow = 'hidden';
+                return;
             }
 
             AppState.transactions.unshift({
@@ -7145,6 +7487,27 @@ document.addEventListener("DOMContentLoaded",function(){
             });
             saveState();
             renderHistorialCobroViernes();
+            toast('✅ Cobro de S/ ' + monto.toFixed(2) + ' registrado 💸');
+        }
+
+        function confirmarCobroManual() {
+            const monto  = parseFloat(document.getElementById('cobro-viernes-monto').value);
+            const cuenta = document.getElementById('cobro-viernes-cuenta').value;
+            const fecha  = document.getElementById('fecha-cobro-input').value;
+            if (isNaN(monto) || monto <= 0) { toast('Configura el monto de tu cobro', 'error'); return; }
+            if (!fecha) { toast('Elige una fecha', 'error'); return; }
+            AppState.transactions.unshift({
+                id: Date.now().toString(),
+                date: fecha,
+                type: 'income',
+                category: '💸 Sueldo Semanal',
+                amount: monto,
+                description: '💸 Cobro viernes — MATE',
+                account: cuenta
+            });
+            saveState();
+            renderHistorialCobroViernes();
+            cerrarModalCompras('modal-fecha-cobro');
             toast('✅ Cobro de S/ ' + monto.toFixed(2) + ' registrado 💸');
         }
 
@@ -7196,6 +7559,577 @@ document.addEventListener("DOMContentLoaded",function(){
         const _origGetCatsIngreso = getCatsIngreso;
 
         // INICIALIZACIÓN COMPLETA
+
+        // ══════════════════════════════════════════════════════════════════
+        // SISTEMA DE NOTIFICACIONES TOAST (antes no existía — bug crítico)
+        // ══════════════════════════════════════════════════════════════════
+        function toast(msg, type) {
+            let c = document.getElementById('toast-container');
+            if (!c) {
+                c = document.createElement('div');
+                c.id = 'toast-container';
+                c.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:400px;';
+                document.body.appendChild(c);
+            }
+            const el = document.createElement('div');
+            const isErr = type === 'error';
+            el.style.cssText = 'padding:11px 18px;border-radius:14px;font-size:13px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:toastIn .25s ease;max-width:100%;text-align:center;background:' + (isErr ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#10b981,#059669)');
+            el.textContent = msg;
+            c.appendChild(el);
+            setTimeout(() => {
+                el.style.transition = 'opacity .3s, transform .3s';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-8px)';
+                setTimeout(() => el.remove(), 320);
+            }, 2600);
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // CONFIRMACIÓN GENÉRICA (reemplaza confirm() nativo — Regla de Oro)
+        // ══════════════════════════════════════════════════════════════════
+        let _confirmCb = null;
+        function askConfirm(titulo, msg, btnTxt, cb) {
+            document.getElementById('confirm-titulo').textContent = titulo;
+            document.getElementById('confirm-msg').textContent = msg;
+            document.getElementById('confirm-btn-si').textContent = btnTxt || 'Sí, continuar';
+            _confirmCb = cb;
+            openModal('modal-confirm');
+            document.body.style.overflow = 'hidden';
+        }
+        function _confirmYes() {
+            cerrarModalCompras('modal-confirm');
+            if (_confirmCb) {
+                const cb = _confirmCb;
+                _confirmCb = null;
+                setTimeout(cb, 80); // Regla de Oro: nunca render síncrono desde onclick generado
+            }
+        }
+        function cerrarModalCompras(id) {
+            closeModal(id);
+            document.body.style.overflow = '';
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // LISTA DE COMPRAS + BIBLIOTECA DE PRODUCTOS
+        // ══════════════════════════════════════════════════════════════════
+        let _comprasTab = 'lista';
+        let _addDesde = 'lista';
+        let _prodEditandoId = null;
+        let _itemPrecioId = null;
+
+        function hoyISO() { return new Date().toISOString().split('T')[0]; }
+        function getProductos() { return AppState.productos || []; }
+        function getLista() {
+            if (!AppState.listaCompras || !Array.isArray(AppState.listaCompras.items)) {
+                AppState.listaCompras = { items: [], creada: hoyISO() };
+            }
+            return AppState.listaCompras;
+        }
+        function unidadLabel(u) { return { kg: 'kg', und: 'und', paq: 'paq', lt: 'L' }[u] || u; }
+        function pasoUnidad(u) { return (u === 'kg' || u === 'lt') ? 0.5 : 1; }
+
+        function setComprasTab(tab) {
+            _comprasTab = tab;
+            ['lista', 'biblioteca', 'historial'].forEach(t => {
+                document.getElementById('compras-tab-' + t).classList.toggle('active', t === tab);
+                document.getElementById('compras-panel-' + t).style.display = (t === tab) ? '' : 'none';
+            });
+            renderCompras();
+        }
+
+        function renderCompras() {
+            const lista = getLista();
+            const items = lista.items;
+
+            // Totales
+            let estimado = 0, comprado = 0, nComprados = 0;
+            items.forEach(it => {
+                const sub = (parseFloat(it.precio) || 0) * (parseFloat(it.cantidad) || 0);
+                estimado += sub;
+                if (it.comprado) { comprado += sub; nComprados++; }
+            });
+            document.getElementById('compras-total-comprado').textContent = 'S/ ' + comprado.toFixed(2);
+            document.getElementById('compras-total-estimado').textContent = 'S/ ' + estimado.toFixed(2);
+            document.getElementById('compras-count-items').textContent = items.length + (items.length === 1 ? ' producto' : ' productos');
+            document.getElementById('compras-barra').style.width = estimado > 0 ? Math.min(100, (comprado / estimado) * 100) + '%' : '0%';
+
+            // Botones condicionales
+            document.getElementById('btn-cerrar-compras').style.display = nComprados > 0 ? '' : 'none';
+            document.getElementById('btn-repetir-compra').style.display = (items.length === 0 && (AppState.comprasHist || []).length > 0) ? '' : 'none';
+
+            // Panel lista
+            const cont = document.getElementById('compras-lista-items');
+            if (items.length === 0) {
+                cont.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#475569;font-size:13px">🛒 Tu lista está vacía.<br>Agrega productos de tu biblioteca para empezar.</div>';
+            } else {
+                cont.innerHTML = items.map(it => {
+                    const sub = ((parseFloat(it.precio) || 0) * (parseFloat(it.cantidad) || 0)).toFixed(2);
+                    const done = it.comprado;
+                    return `
+                    <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:16px;background:${done ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.03)'};border:1px solid ${done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)'}">
+                        <div onclick="toggleComprado('${it.id}')" style="width:26px;height:26px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;background:${done ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'rgba(255,255,255,0.05)'};border:1px solid ${done ? 'transparent' : 'rgba(255,255,255,0.15)'}">${done ? '✓' : ''}</div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:13px;font-weight:700;color:${done ? '#86efac' : '#f1f5f9'};${done ? 'text-decoration:line-through;opacity:.75' : ''}">${it.emoji || '🛒'} ${it.nombre}</div>
+                            <div onclick="abrirPrecioItem('${it.id}')" style="font-size:11px;color:#94a3b8;cursor:pointer;margin-top:2px">S/ ${parseFloat(it.precio).toFixed(2)} × ${it.cantidad} ${unidadLabel(it.unidad)} <span style="color:#475569">✏️</span></div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0">
+                            <div style="font-size:13px;font-weight:800;color:${done ? '#4ade80' : '#e2e8f0'}">S/ ${sub}</div>
+                            <div style="display:flex;gap:4px;margin-top:4px;align-items:center">
+                                <button onclick="cambiarCantidad('${it.id}',-1)" style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:800;cursor:pointer;font-size:13px;line-height:1">−</button>
+                                <button onclick="cambiarCantidad('${it.id}',1)" style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:800;cursor:pointer;font-size:13px;line-height:1">+</button>
+                                <button onclick="quitarItemLista('${it.id}')" style="width:24px;height:24px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#f87171;cursor:pointer;font-size:11px;line-height:1">🗑</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Panel biblioteca
+            const bib = document.getElementById('compras-biblioteca-list');
+            const prods = getProductos();
+            if (prods.length === 0) {
+                bib.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#475569;font-size:13px">📦 Aún no tienes productos.<br>Crea tu primer producto con su precio.</div>';
+            } else {
+                bib.innerHTML = prods.map(p => {
+                    const hist = p.historialPrecios || [];
+                    const ultimo = hist.length > 0 ? hist[hist.length - 1].fecha : '';
+                    let tendencia = '';
+                    if (hist.length >= 2) {
+                        const prev = parseFloat(hist[hist.length - 2].precio);
+                        const act  = parseFloat(hist[hist.length - 1].precio);
+                        if (act > prev) tendencia = ' <span style="color:#f87171;font-size:10px">▲ subió</span>';
+                        else if (act < prev) tendencia = ' <span style="color:#4ade80;font-size:10px">▼ bajó</span>';
+                    }
+                    return `
+                    <div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
+                        <div style="font-size:22px;flex-shrink:0">${p.emoji || '📦'}</div>
+                        <div style="flex:1;min-width:0" onclick="abrirEditarProducto('${p.id}')">
+                            <div style="font-size:13px;font-weight:700;color:#f1f5f9">${p.nombre}</div>
+                            <div style="font-size:11px;color:#94a3b8;margin-top:2px">S/ ${parseFloat(p.precio).toFixed(2)} / ${unidadLabel(p.unidad)}${tendencia}${ultimo ? ' · act. ' + ultimo : ''}</div>
+                        </div>
+                        <button onclick="agregarALista('${p.id}')" style="padding:8px 12px;border-radius:11px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-weight:800;font-size:12px;cursor:pointer;flex-shrink:0">+ Lista</button>
+                    </div>`;
+                }).join('');
+            }
+
+            // Panel historial
+            const histEl = document.getElementById('compras-historial-list');
+            const compras = AppState.comprasHist || [];
+            if (compras.length === 0) {
+                histEl.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#475569;font-size:13px">📜 Aquí verás tus compras cerradas.</div>';
+            } else {
+                histEl.innerHTML = compras.map(c => {
+                    const cuentaObj = CUENTAS_CATALOG.find(x => x.id === c.cuenta);
+                    const detalle = (c.items || []).map(i =>
+                        `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:${i.comprado ? '#94a3b8' : '#475569'}">
+                            <span>${i.comprado ? '✅' : '⬜'} ${i.emoji || ''} ${i.nombre} · ${i.cantidad} ${unidadLabel(i.unidad)}</span>
+                            <span style="${i.comprado ? '' : 'text-decoration:line-through'}">S/ ${((parseFloat(i.precio)||0)*(parseFloat(i.cantidad)||0)).toFixed(2)}</span>
+                        </div>`).join('');
+                    return `
+                    <div style="border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);overflow:hidden">
+                        <div onclick="toggleHistCompra('${c.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;cursor:pointer">
+                            <div>
+                                <div style="font-size:13px;font-weight:700;color:#f1f5f9">🛒 Compras ${c.fecha}</div>
+                                <div style="font-size:11px;color:#64748b;margin-top:2px">${(c.items||[]).filter(i=>i.comprado).length} productos · ${cuentaObj ? cuentaObj.icon + ' ' + cuentaObj.name : ''}</div>
+                            </div>
+                            <div style="font-size:14px;font-weight:800;color:#4ade80">S/ ${parseFloat(c.total).toFixed(2)}</div>
+                        </div>
+                        <div id="hist-compra-${c.id}" style="display:none;padding:0 14px 12px 14px;border-top:1px solid rgba(255,255,255,0.05)">${detalle}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function toggleHistCompra(id) {
+            const el = document.getElementById('hist-compra-' + id);
+            if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+        }
+
+        // ── Agregar producto ──
+        function abrirAgregarProducto(desde) {
+            _addDesde = desde;
+            document.getElementById('agregar-prod-sub').textContent = desde === 'lista'
+                ? 'Toca un producto para sumarlo a tu lista'
+                : 'Crea un producto nuevo para tu biblioteca';
+            const grid = document.getElementById('agregar-prod-grid');
+            const prods = getProductos();
+            if (desde === 'lista' && prods.length > 0) {
+                grid.innerHTML = prods.map(p =>
+                    `<button onclick="agregarALista('${p.id}')" style="padding:9px 13px;border-radius:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);color:#d1fae5;font-size:12px;font-weight:700;cursor:pointer">${p.emoji || '📦'} ${p.nombre} <span style="color:#4ade80">S/${parseFloat(p.precio).toFixed(2)}</span></button>`
+                ).join('');
+                grid.style.display = '';
+            } else {
+                grid.innerHTML = '';
+                grid.style.display = 'none';
+            }
+            document.getElementById('nuevo-prod-emoji').value = '';
+            document.getElementById('nuevo-prod-nombre').value = '';
+            document.getElementById('nuevo-prod-precio').value = '';
+            openModal('modal-agregar-producto');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function crearProducto() {
+            const emoji  = document.getElementById('nuevo-prod-emoji').value.trim() || '📦';
+            const nombre = document.getElementById('nuevo-prod-nombre').value.trim();
+            const precio = parseFloat(document.getElementById('nuevo-prod-precio').value);
+            const unidad = document.getElementById('nuevo-prod-unidad').value;
+            if (!nombre) { toast('Ponle un nombre al producto', 'error'); return; }
+            if (isNaN(precio) || precio < 0) { toast('Ingresa un precio válido', 'error'); return; }
+            if (getProductos().some(p => p.nombre.toLowerCase() === nombre.toLowerCase())) {
+                toast('Ya tienes "' + nombre + '" en tu biblioteca', 'error'); return;
+            }
+            const prod = {
+                id: 'prod_' + Date.now(),
+                emoji, nombre, precio, unidad,
+                historialPrecios: [{ fecha: hoyISO(), precio: precio }]
+            };
+            AppState.productos.push(prod);
+            if (_addDesde === 'lista') _agregarItemDeProducto(prod);
+            saveState();
+            cerrarModalCompras('modal-agregar-producto');
+            setTimeout(renderCompras, 80);
+            toast('✅ "' + nombre + '" guardado' + (_addDesde === 'lista' ? ' y agregado a tu lista' : ''));
+        }
+
+        function _agregarItemDeProducto(prod) {
+            const lista = getLista();
+            const existente = lista.items.find(it => it.productoId === prod.id);
+            if (existente) {
+                existente.cantidad = parseFloat((parseFloat(existente.cantidad) + pasoUnidad(prod.unidad)).toFixed(2));
+            } else {
+                lista.items.push({
+                    id: 'item_' + Date.now() + '_' + Math.floor(Math.random() * 999),
+                    productoId: prod.id,
+                    nombre: prod.nombre, emoji: prod.emoji, unidad: prod.unidad,
+                    precio: prod.precio,
+                    cantidad: pasoUnidad(prod.unidad) === 0.5 ? 1 : 1,
+                    comprado: false
+                });
+            }
+        }
+
+        function agregarALista(prodId) {
+            const prod = getProductos().find(p => p.id === prodId);
+            if (!prod) return;
+            _agregarItemDeProducto(prod);
+            saveState();
+            setTimeout(renderCompras, 80);
+            toast('🛒 ' + prod.nombre + ' en la lista');
+        }
+
+        function toggleComprado(itemId) {
+            const it = getLista().items.find(i => i.id === itemId);
+            if (!it) return;
+            it.comprado = !it.comprado;
+            saveState();
+            setTimeout(renderCompras, 60);
+        }
+
+        function cambiarCantidad(itemId, dir) {
+            const it = getLista().items.find(i => i.id === itemId);
+            if (!it) return;
+            const paso = pasoUnidad(it.unidad);
+            let nueva = parseFloat((parseFloat(it.cantidad) + dir * paso).toFixed(2));
+            if (nueva < paso) nueva = paso;
+            it.cantidad = nueva;
+            saveState();
+            setTimeout(renderCompras, 60);
+        }
+
+        function quitarItemLista(itemId) {
+            const lista = getLista();
+            lista.items = lista.items.filter(i => i.id !== itemId);
+            saveState();
+            setTimeout(renderCompras, 60);
+        }
+
+        // ── Precio de item (actualiza también biblioteca + historial) ──
+        function abrirPrecioItem(itemId) {
+            const it = getLista().items.find(i => i.id === itemId);
+            if (!it) return;
+            _itemPrecioId = itemId;
+            document.getElementById('precio-item-titulo').textContent = '💰 ' + (it.emoji || '') + ' ' + it.nombre + ' (por ' + unidadLabel(it.unidad) + ')';
+            document.getElementById('precio-item-input').value = parseFloat(it.precio).toFixed(2);
+            openModal('modal-precio-item');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function guardarPrecioItem() {
+            const nuevo = parseFloat(document.getElementById('precio-item-input').value);
+            if (isNaN(nuevo) || nuevo < 0) { toast('Precio inválido', 'error'); return; }
+            const it = getLista().items.find(i => i.id === _itemPrecioId);
+            if (!it) return;
+            it.precio = nuevo;
+            const prod = getProductos().find(p => p.id === it.productoId);
+            if (prod) {
+                prod.precio = nuevo;
+                prod.historialPrecios = prod.historialPrecios || [];
+                const hoy = hoyISO();
+                const ult = prod.historialPrecios[prod.historialPrecios.length - 1];
+                if (ult && ult.fecha === hoy) ult.precio = nuevo;
+                else prod.historialPrecios.push({ fecha: hoy, precio: nuevo });
+                if (prod.historialPrecios.length > 30) prod.historialPrecios = prod.historialPrecios.slice(-30);
+            }
+            saveState();
+            cerrarModalCompras('modal-precio-item');
+            setTimeout(renderCompras, 80);
+            toast('✅ Precio actualizado a S/ ' + nuevo.toFixed(2));
+        }
+
+        // ── Editar producto (biblioteca) ──
+        function abrirEditarProducto(prodId) {
+            const p = getProductos().find(x => x.id === prodId);
+            if (!p) return;
+            _prodEditandoId = prodId;
+            document.getElementById('edit-prod-titulo').textContent = '📦 ' + p.nombre;
+            document.getElementById('edit-prod-emoji').value = p.emoji || '';
+            document.getElementById('edit-prod-nombre').value = p.nombre;
+            document.getElementById('edit-prod-precio').value = parseFloat(p.precio).toFixed(2);
+            document.getElementById('edit-prod-unidad').value = p.unidad || 'und';
+            const hist = (p.historialPrecios || []).slice(-8).reverse();
+            document.getElementById('edit-prod-historial').innerHTML = hist.length === 0 ? '' :
+                '<div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px">📈 HISTORIAL DE PRECIOS</div>' +
+                '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:8px 12px">' +
+                hist.map((hh, i) => {
+                    const sig = hist[i + 1];
+                    let flecha = '';
+                    if (sig) {
+                        if (parseFloat(hh.precio) > parseFloat(sig.precio)) flecha = ' <span style="color:#f87171">▲</span>';
+                        else if (parseFloat(hh.precio) < parseFloat(sig.precio)) flecha = ' <span style="color:#4ade80">▼</span>';
+                    }
+                    return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:#94a3b8"><span>${hh.fecha}</span><span style="font-weight:700;color:#e2e8f0">S/ ${parseFloat(hh.precio).toFixed(2)}${flecha}</span></div>`;
+                }).join('') + '</div>';
+            openModal('modal-editar-producto');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function guardarProductoEditado() {
+            const p = getProductos().find(x => x.id === _prodEditandoId);
+            if (!p) return;
+            const nombre = document.getElementById('edit-prod-nombre').value.trim();
+            const precio = parseFloat(document.getElementById('edit-prod-precio').value);
+            if (!nombre) { toast('El nombre no puede quedar vacío', 'error'); return; }
+            if (isNaN(precio) || precio < 0) { toast('Precio inválido', 'error'); return; }
+            p.emoji = document.getElementById('edit-prod-emoji').value.trim() || '📦';
+            p.nombre = nombre;
+            p.unidad = document.getElementById('edit-prod-unidad').value;
+            if (parseFloat(p.precio) !== precio) {
+                p.historialPrecios = p.historialPrecios || [];
+                const hoy = hoyISO();
+                const ult = p.historialPrecios[p.historialPrecios.length - 1];
+                if (ult && ult.fecha === hoy) ult.precio = precio;
+                else p.historialPrecios.push({ fecha: hoy, precio: precio });
+            }
+            p.precio = precio;
+            getLista().items.forEach(it => {
+                if (it.productoId === p.id) { it.nombre = p.nombre; it.emoji = p.emoji; it.unidad = p.unidad; it.precio = p.precio; }
+            });
+            saveState();
+            cerrarModalCompras('modal-editar-producto');
+            setTimeout(renderCompras, 80);
+            toast('✅ Producto actualizado');
+        }
+
+        function eliminarProductoActual() {
+            const p = getProductos().find(x => x.id === _prodEditandoId);
+            if (!p) return;
+            cerrarModalCompras('modal-editar-producto');
+            askConfirm('🗑 Eliminar producto', '¿Borrar "' + p.nombre + '" de tu biblioteca? También se quitará de tu lista actual.', 'Sí, eliminar', () => {
+                AppState.productos = getProductos().filter(x => x.id !== p.id);
+                getLista().items = getLista().items.filter(i => i.productoId !== p.id);
+                saveState();
+                renderCompras();
+                toast('Producto eliminado');
+            });
+        }
+
+        // ── Cierre de compras → gasto real en WalletTrack ──
+        function abrirCerrarCompras() {
+            const items = getLista().items;
+            const comprados = items.filter(i => i.comprado);
+            if (comprados.length === 0) { toast('Marca al menos un producto como comprado', 'error'); return; }
+            const total = comprados.reduce((a, i) => a + (parseFloat(i.precio) || 0) * (parseFloat(i.cantidad) || 0), 0);
+            document.getElementById('cerrar-compras-total').textContent = 'S/ ' + total.toFixed(2);
+            document.getElementById('cerrar-compras-detalle').textContent = comprados.length + ' comprados · ' + (items.length - comprados.length) + ' quedaron pendientes';
+            const sel = document.getElementById('cerrar-compras-cuenta');
+            sel.innerHTML = CUENTAS_CATALOG.map(c => `<option value="${c.id}">${c.icon} ${c.name} — S/ ${getSaldoCuenta(c.id).toFixed(2)}</option>`).join('');
+            sel.value = 'efectivo';
+            openModal('modal-cerrar-compras');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function confirmarCierreCompras() {
+            const lista = getLista();
+            const comprados = lista.items.filter(i => i.comprado);
+            if (comprados.length === 0) return;
+            const total = comprados.reduce((a, i) => a + (parseFloat(i.precio) || 0) * (parseFloat(i.cantidad) || 0), 0);
+            const cuenta = document.getElementById('cerrar-compras-cuenta').value || 'efectivo';
+
+            AppState.transactions.unshift({
+                id: Date.now().toString(),
+                date: hoyISO(),
+                type: 'expense',
+                category: 'Alimentación',
+                amount: parseFloat(total.toFixed(2)),
+                description: '🛒 Compras — ' + comprados.length + ' productos',
+                account: cuenta
+            });
+
+            AppState.comprasHist = AppState.comprasHist || [];
+            AppState.comprasHist.unshift({
+                id: 'compra_' + Date.now(),
+                fecha: hoyISO(),
+                total: parseFloat(total.toFixed(2)),
+                cuenta: cuenta,
+                items: JSON.parse(JSON.stringify(lista.items))
+            });
+            if (AppState.comprasHist.length > 24) AppState.comprasHist = AppState.comprasHist.slice(0, 24);
+
+            lista.items = [];
+            lista.creada = hoyISO();
+            saveState();
+            cerrarModalCompras('modal-cerrar-compras');
+            setTimeout(renderCompras, 80);
+            toast('💸 S/ ' + total.toFixed(2) + ' descontado de tu cuenta. ¡Lista archivada!');
+        }
+
+        function repetirUltimaCompra() {
+            const hist = AppState.comprasHist || [];
+            if (hist.length === 0) return;
+            const lista = getLista();
+            hist[0].items.forEach(vi => {
+                const prod = getProductos().find(p => p.id === vi.productoId);
+                lista.items.push({
+                    id: 'item_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+                    productoId: vi.productoId,
+                    nombre: prod ? prod.nombre : vi.nombre,
+                    emoji: prod ? prod.emoji : vi.emoji,
+                    unidad: prod ? prod.unidad : vi.unidad,
+                    precio: prod ? prod.precio : vi.precio,
+                    cantidad: vi.cantidad,
+                    comprado: false
+                });
+            });
+            saveState();
+            setTimeout(renderCompras, 80);
+            toast('🔁 Lista recreada con precios actualizados');
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // GASTOS RÁPIDOS DE 1 TOQUE (Dashboard)
+        // ══════════════════════════════════════════════════════════════════
+        let _grActivoId = null;
+
+        function renderGastosRapidos() {
+            const cont = document.getElementById('gastos-rapidos-chips');
+            if (!cont) return;
+            const grs = AppState.gastosRapidos || [];
+            if (grs.length === 0) {
+                cont.innerHTML = '<button onclick="abrirGestorRapidos()" style="padding:10px 16px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.15);color:#64748b;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">➕ Crear tu primer gasto rápido</button>';
+                return;
+            }
+            cont.innerHTML = grs.map(g =>
+                `<button onclick="tapGastoRapido('${g.id}')" style="flex-shrink:0;display:flex;align-items:center;gap:7px;padding:10px 15px;border-radius:14px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);cursor:pointer;white-space:nowrap">
+                    <span style="font-size:16px">${g.emoji}</span>
+                    <span style="font-size:12px;font-weight:800;color:#fcd34d">${g.nombre}</span>
+                    <span style="font-size:11px;font-weight:700;color:#94a3b8">S/${parseFloat(g.monto).toFixed(0)}</span>
+                </button>`
+            ).join('');
+        }
+
+        function tapGastoRapido(id) {
+            const g = (AppState.gastosRapidos || []).find(x => x.id === id);
+            if (!g) return;
+            _grActivoId = id;
+            document.getElementById('gr-titulo').textContent = '⚡ ' + g.emoji + ' ' + g.nombre;
+            document.getElementById('gr-monto').value = parseFloat(g.monto).toFixed(2);
+            const sel = document.getElementById('gr-cuenta');
+            sel.innerHTML = CUENTAS_CATALOG.map(c => `<option value="${c.id}">${c.icon} ${c.name} — S/ ${getSaldoCuenta(c.id).toFixed(2)}</option>`).join('');
+            sel.value = g.cuenta || 'efectivo';
+            openModal('modal-gasto-rapido');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function confirmarGastoRapido() {
+            const g = (AppState.gastosRapidos || []).find(x => x.id === _grActivoId);
+            if (!g) return;
+            const monto = parseFloat(document.getElementById('gr-monto').value);
+            const cuenta = document.getElementById('gr-cuenta').value || 'efectivo';
+            if (isNaN(monto) || monto <= 0) { toast('Monto inválido', 'error'); return; }
+            AppState.transactions.unshift({
+                id: Date.now().toString(),
+                date: hoyISO(),
+                type: 'expense',
+                category: g.categoria || 'Otros',
+                amount: monto,
+                description: g.emoji + ' ' + g.nombre,
+                account: cuenta
+            });
+            g.cuenta = cuenta;
+            g.monto = monto;
+            saveState();
+            cerrarModalCompras('modal-gasto-rapido');
+            toast('⚡ ' + g.nombre + ' S/ ' + monto.toFixed(2) + ' registrado');
+        }
+
+        function abrirGestorRapidos() {
+            _renderGestorRapidos();
+            const cats = getCatsGasto();
+            document.getElementById('gr-nuevo-cat').innerHTML = cats.map(c => `<option value="${c.nombre}">${c.emoji} ${c.nombre}</option>`).join('');
+            document.getElementById('gr-nuevo-cuenta').innerHTML = CUENTAS_CATALOG.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+            document.getElementById('gr-nuevo-emoji').value = '';
+            document.getElementById('gr-nuevo-nombre').value = '';
+            document.getElementById('gr-nuevo-monto').value = '';
+            openModal('modal-gestor-rapidos');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function _renderGestorRapidos() {
+            const cont = document.getElementById('gestor-rapidos-list');
+            const grs = AppState.gastosRapidos || [];
+            cont.innerHTML = grs.length === 0
+                ? '<div style="text-align:center;color:#475569;font-size:12px;padding:10px">Sin gastos rápidos aún.</div>'
+                : grs.map(g => `
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
+                        <span style="font-size:18px">${g.emoji}</span>
+                        <div style="flex:1">
+                            <div style="font-size:13px;font-weight:700;color:#f1f5f9">${g.nombre}</div>
+                            <div style="font-size:11px;color:#64748b">S/ ${parseFloat(g.monto).toFixed(2)} · ${g.categoria}</div>
+                        </div>
+                        <button onclick="eliminarGastoRapido('${g.id}')" style="width:28px;height:28px;border-radius:9px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#f87171;cursor:pointer;font-size:12px">🗑</button>
+                    </div>`).join('');
+        }
+
+        function crearGastoRapido() {
+            const emoji  = document.getElementById('gr-nuevo-emoji').value.trim() || '⚡';
+            const nombre = document.getElementById('gr-nuevo-nombre').value.trim();
+            const monto  = parseFloat(document.getElementById('gr-nuevo-monto').value);
+            const cat    = document.getElementById('gr-nuevo-cat').value;
+            const cuenta = document.getElementById('gr-nuevo-cuenta').value;
+            if (!nombre) { toast('Ponle un nombre', 'error'); return; }
+            if (isNaN(monto) || monto <= 0) { toast('Ingresa un monto válido', 'error'); return; }
+            AppState.gastosRapidos = AppState.gastosRapidos || [];
+            AppState.gastosRapidos.push({ id: 'gr_' + Date.now(), emoji, nombre, monto, categoria: cat, cuenta });
+            saveState();
+            _renderGestorRapidos();
+            renderGastosRapidos();
+            document.getElementById('gr-nuevo-emoji').value = '';
+            document.getElementById('gr-nuevo-nombre').value = '';
+            document.getElementById('gr-nuevo-monto').value = '';
+            toast('✅ "' + nombre + '" agregado');
+        }
+
+        function eliminarGastoRapido(id) {
+            AppState.gastosRapidos = (AppState.gastosRapidos || []).filter(g => g.id !== id);
+            saveState();
+            _renderGestorRapidos();
+            renderGastosRapidos();
+            toast('Gasto rápido eliminado');
+        }
+
         function initApp() {
             loadState();
             applyThemeOnLoad();
@@ -7206,6 +8140,7 @@ document.addEventListener("DOMContentLoaded",function(){
             renderHistorialCobroViernes();
             renderSobres();
             renderDeudas();
+            renderGastosRapidos();
             checkPinLock();
             if (AppState.security.autoLock && AppState.security.pinEnabled) {
                 resetAutoLockTimer();
