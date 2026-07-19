@@ -94,6 +94,13 @@
 
         /* ── Modales (bottom-sheet seguro en Android) ─────────────────── */
         @keyframes toastIn { from { opacity:0; transform:translateY(-10px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+        /* ── Contraste en modo claro: los textos claros (pensados para fondo
+           oscuro) quedaban casi invisibles sobre tarjetas blancas ── */
+        body.theme-light .text-slate-100 { color:#0f172a !important; }
+        body.theme-light .text-slate-200 { color:#1e293b !important; }
+        body.theme-light .text-slate-300 { color:#334155 !important; }
+        body.theme-light .text-slate-400 { color:#64748b !important; }
+        body.theme-light .text-slate-500 { color:#64748b !important; }
         .compras-tab-btn { flex:1; padding:9px 4px; border-radius:12px; font-size:12px; font-weight:700; border:1px solid transparent; background:transparent; color:#94a3b8; cursor:pointer; transition:all .2s; }
         .compras-tab-btn.active { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.3); color:#4ade80; }
 
@@ -2800,6 +2807,7 @@ document.addEventListener("DOMContentLoaded",function(){
                     <div style="width:64px">
                         <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Emoji</label>
                         <input type="text" id="nuevo-prod-emoji" placeholder="🍗" maxlength="4" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 8px;color:#f1f5f9;font-size:16px;text-align:center;outline:none;box-sizing:border-box">
+                        <div id="nuevo-prod-emoji-picker" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;max-width:200px"></div>
                     </div>
                     <div style="flex:1">
                         <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
@@ -2808,16 +2816,17 @@ document.addEventListener("DOMContentLoaded",function(){
                 </div>
                 <div style="display:flex;gap:8px;margin-bottom:14px">
                     <div style="flex:1">
-                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio (S/)</label>
-                        <input type="number" step="0.10" min="0" id="nuevo-prod-precio" placeholder="7.00" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                        <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio (S/) — opcional</label>
+                        <input type="number" step="0.10" min="0" id="nuevo-prod-precio" placeholder="Lo pongo al comprar" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
                     </div>
                     <div style="flex:1">
                         <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Unidad</label>
-                        <select id="nuevo-prod-unidad" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                        <select id="nuevo-prod-unidad" onchange="_toggleCantidadPreview('nuevo')" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 10px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
                             <option value="kg">kg</option>
                             <option value="und">unidad</option>
                             <option value="paq">paquete</option>
                             <option value="lt">litro</option>
+                            <option value="monto">monto directo (S/)</option>
                         </select>
                     </div>
                 </div>
@@ -2839,6 +2848,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 <div style="width:64px">
                     <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Emoji</label>
                     <input type="text" id="edit-prod-emoji" maxlength="4" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 8px;color:#f1f5f9;font-size:16px;text-align:center;outline:none;box-sizing:border-box">
+                    <div id="edit-prod-emoji-picker" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;max-width:200px"></div>
                 </div>
                 <div style="flex:1">
                     <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Nombre</label>
@@ -2847,8 +2857,8 @@ document.addEventListener("DOMContentLoaded",function(){
             </div>
             <div style="display:flex;gap:8px;margin-bottom:12px">
                 <div style="flex:1">
-                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio actual (S/)</label>
-                    <input type="number" step="0.10" min="0" id="edit-prod-precio" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
+                    <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio de referencia (S/) — opcional</label>
+                    <input type="number" step="0.10" min="0" id="edit-prod-precio" placeholder="Sin precio" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:14px;outline:none;box-sizing:border-box">
                 </div>
                 <div style="flex:1">
                     <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Unidad</label>
@@ -2857,6 +2867,7 @@ document.addEventListener("DOMContentLoaded",function(){
                         <option value="und">unidad</option>
                         <option value="paq">paquete</option>
                         <option value="lt">litro</option>
+                        <option value="monto">monto directo (S/)</option>
                     </select>
                 </div>
             </div>
@@ -2890,18 +2901,34 @@ document.addEventListener("DOMContentLoaded",function(){
         </div>
     </div>
 
-    <!-- ══ MODAL EDITAR PRECIO DE ITEM ══ -->
+    <!-- ══ MODAL EDITAR ITEM (cantidad + precio) ══ -->
     <div id="modal-precio-item" class="modal-overlay hidden">
         <div class="modal-sheet premium-glass border border-green-500/30 custom-shadow">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-                <h3 style="font-size:16px;font-weight:800;color:#86efac" id="precio-item-titulo">💰 Actualizar precio</h3>
+                <h3 style="font-size:15px;font-weight:800;color:#86efac" id="precio-item-titulo">💰 Actualizar</h3>
                 <button onclick="cerrarModalCompras('modal-precio-item')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>
             </div>
-            <p style="font-size:11px;color:#94a3b8;margin-bottom:10px">El precio nuevo se guarda también en tu biblioteca y en el historial de precios.</p>
-            <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Precio de hoy (S/)</label>
-            <input type="number" step="0.10" min="0" id="precio-item-input" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:16px;outline:none;box-sizing:border-box;margin-bottom:14px">
+
+            <div id="precio-item-cantidad-wrap" style="margin-bottom:12px">
+                <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">Cantidad exacta que compraste</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <input type="number" step="0.1" min="0.1" id="precio-item-cantidad" oninput="_actualizarPreviewItem()" style="flex:1;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:16px;outline:none;box-sizing:border-box">
+                    <span id="precio-item-unidad-label" style="font-size:13px;font-weight:700;color:#94a3b8;min-width:40px">kg</span>
+                </div>
+            </div>
+
+            <div id="precio-item-modo-wrap" style="display:flex;gap:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:4px;margin-bottom:12px">
+                <button type="button" id="precio-item-modo-unitario" onclick="_setModoPrecioItem('unitario')" style="flex:1;padding:9px 4px;border-radius:11px;font-size:11px;font-weight:700;border:1px solid transparent;background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3);color:#4ade80;cursor:pointer">Sé el precio × unidad</button>
+                <button type="button" id="precio-item-modo-total" onclick="_setModoPrecioItem('total')" style="flex:1;padding:9px 4px;border-radius:11px;font-size:11px;font-weight:700;border:1px solid transparent;background:transparent;color:#94a3b8;cursor:pointer">Sé el total pagado</button>
+            </div>
+
+            <label style="font-size:10px;font-weight:600;color:#64748b;display:block;margin-bottom:5px" id="precio-item-input-label">Precio por unidad (S/)</label>
+            <input type="number" step="0.10" min="0" id="precio-item-input" oninput="_actualizarPreviewItem()" style="width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 14px;color:#f1f5f9;font-size:16px;outline:none;box-sizing:border-box;margin-bottom:10px">
+
+            <div style="text-align:center;font-size:12px;color:#64748b;margin-bottom:14px">Total: <span id="precio-item-preview" style="font-weight:800;color:#4ade80">S/ 0.00</span></div>
+
             <button onclick="guardarPrecioItem()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer">
-                ✅ Actualizar precio
+                ✅ Guardar
             </button>
         </div>
     </div>
@@ -3299,6 +3326,7 @@ document.addEventListener("DOMContentLoaded",function(){
             let gastosHistorico = 0;
             AppState.transactions.forEach(t => {
                 if (t.category === '__fondo_empresa__') return; // excluir fondo empresa
+                if (t.esSobre) return; // excluir apartados a sobres/chanchito de ahorro
                 if (t.type === "income") ingresosHistorico += parseFloat(t.amount);
                 else gastosHistorico += parseFloat(t.amount);
             });
@@ -3311,6 +3339,7 @@ document.addEventListener("DOMContentLoaded",function(){
             let gastosMes = 0;
             AppState.transactions.forEach(t => {
                 if (t.category === '__fondo_empresa__') return; // excluir fondo empresa
+                if (t.esSobre) return; // excluir apartados a sobres/chanchito de ahorro
                 const mesTx = t.date ? t.date.substring(0, 7) : '';
                 if (mesTx === mesActual) {
                     if (t.type === "income") ingresosMes += parseFloat(t.amount);
@@ -3568,7 +3597,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
             const categoriesMap = {};
             AppState.transactions.forEach(t => {
-                if (t.type === "expense" && t.category !== '__fondo_empresa__') {
+                if (t.type === "expense" && t.category !== '__fondo_empresa__' && !t.esSobre) {
                     const mesTx = (t.date || '').substring(0, 7);
                     if (mesTx === mesActual) {
                         const cat = t.category || 'Sin categoría';
@@ -3899,6 +3928,7 @@ document.addEventListener("DOMContentLoaded",function(){
             let gastosComida = 0;
 
             AppState.transactions.forEach(t => {
+                if (t.category === '__fondo_empresa__' || t.esSobre) return; // excluir fondo empresa y ahorros
                 if(t.type === "income") totalIngresos += t.amount;
                 else {
                     totalGastos += t.amount;
@@ -4377,8 +4407,9 @@ document.addEventListener("DOMContentLoaded",function(){
                     'wallettrack_cards','wallettrack_cat_gasto','wallettrack_cat_ingreso',
                     'wallettrack_sobres','wallettrack_sobre_movs',
                     'wallettrack_deudas','wallettrack_deuda_movs',
-                    'wallettrack_productos','wallettrack_lista_compras','wallettrack_compras_hist',
-                    'wallettrack_gastos_rapidos'
+                    'wallettrack_lista_compras','wallettrack_compras_hist'
+                    // NOTA: wallettrack_productos (biblioteca) y wallettrack_gastos_rapidos
+                    // NO se borran — son catálogos de referencia, no historial financiero.
                 ];
                 keys.forEach(k => localStorage.removeItem(k));
                 AppState.transactions = [];
@@ -4394,13 +4425,9 @@ document.addEventListener("DOMContentLoaded",function(){
                 AppState.sobreMovs = [];
                 AppState.deudas = [];
                 AppState.deudaMovs = [];
-                AppState.productos = [];
                 AppState.listaCompras = { items: [], creada: hoyISO() };
                 AppState.comprasHist = [];
-                AppState.gastosRapidos = [
-                    { id: 'gr_gasolina', emoji: '⛽', nombre: 'Gasolina', monto: 20, categoria: 'Combustible',  cuenta: 'efectivo' },
-                    { id: 'gr_menu',     emoji: '🍔', nombre: 'Menú',     monto: 12, categoria: 'Alimentación', cuenta: 'efectivo' }
-                ];
+                // Biblioteca de productos y gastos rápidos se mantienen intactos
                 saveState();
                 poblarSelectCats();
                 refreshAllUI();
@@ -4793,6 +4820,7 @@ document.addEventListener("DOMContentLoaded",function(){
             // for all months that have data, sorted ascending
             const mapa = {};
             AppState.transactions.forEach(t => {
+                if (t.category === '__fondo_empresa__' || t.esSobre) return; // excluir fondo empresa y ahorros
                 const m = (t.date||'').substring(0,7);
                 if (!m) return;
                 if (!mapa[m]) mapa[m] = { ingresos:0, gastos:0 };
@@ -4823,7 +4851,7 @@ document.addEventListener("DOMContentLoaded",function(){
             const mejorMes   = meses.length ? meses.reduce((a,b) => b.ahorro > a.ahorro ? b : a) : null;
             const peorMes    = meses.length ? meses.reduce((a,b) => b.ahorro < a.ahorro ? b : a) : null;
             const mayorIng   = allTx.filter(t=>t.type==='income').sort((a,b)=>b.amount-a.amount)[0] || null;
-            const mayorGasto = allTx.filter(t=>t.type==='expense').sort((a,b)=>b.amount-a.amount)[0] || null;
+            const mayorGasto = allTx.filter(t=>t.type==='expense' && t.category!=='__fondo_empresa__' && !t.esSobre).sort((a,b)=>b.amount-a.amount)[0] || null;
             const totalMeses = meses.length || 1;
             const promIngMes = meses.reduce((a,b)=>a+b.ingresos,0) / totalMeses;
             const promGasMes = meses.reduce((a,b)=>a+b.gastos,0)   / totalMeses;
@@ -4848,7 +4876,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
             // ── Top categorías ───────────────────────────────────────────
             const catMap = {};
-            allTx.forEach(t => { if(t.type==='expense') catMap[t.category]=(catMap[t.category]||0)+parseFloat(t.amount); });
+            allTx.forEach(t => { if(t.type==='expense' && t.category!=='__fondo_empresa__' && !t.esSobre) catMap[t.category]=(catMap[t.category]||0)+parseFloat(t.amount); });
             const topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
             const maxCat  = topCats[0]?.[1] || 1;
             const catColors = ['#fb7185','#fbbf24','#818cf8','#34d399','#0ea5e9','#f97316'];
@@ -5336,7 +5364,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         function exportBackup() {
             const data = {
-                version: '2.0',
+                version: '3.0',
                 fecha: new Date().toISOString(),
                 transactions:  AppState.transactions,
                 goals:         AppState.goals,
@@ -5347,6 +5375,14 @@ document.addEventListener("DOMContentLoaded",function(){
                 budgets:       AppState.budgets,
                 categoriasGasto:   AppState.categoriasGasto||[],
                 categoriasIngreso: AppState.categoriasIngreso||[],
+                sobres:        AppState.sobres||[],
+                sobreMovs:     AppState.sobreMovs||[],
+                deudas:        AppState.deudas||[],
+                deudaMovs:     AppState.deudaMovs||[],
+                productos:     AppState.productos||[],
+                listaCompras:  AppState.listaCompras||{items:[]},
+                comprasHist:   AppState.comprasHist||[],
+                gastosRapidos: AppState.gastosRapidos||[],
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
             const nom = 'WalletTrack_Backup_' + new Date().toISOString().split('T')[0] + '.json';
@@ -5373,11 +5409,23 @@ document.addEventListener("DOMContentLoaded",function(){
                     if (data.budgets)       AppState.budgets       = data.budgets;
                     if (data.categoriasGasto)   AppState.categoriasGasto   = data.categoriasGasto;
                     if (data.categoriasIngreso) AppState.categoriasIngreso = data.categoriasIngreso;
+                    if (data.sobres)        AppState.sobres        = data.sobres;
+                    if (data.sobreMovs)     AppState.sobreMovs     = data.sobreMovs;
+                    if (data.deudas)        AppState.deudas        = data.deudas;
+                    if (data.deudaMovs)     AppState.deudaMovs     = data.deudaMovs;
+                    if (data.productos)     AppState.productos     = data.productos;
+                    if (data.listaCompras)  AppState.listaCompras  = data.listaCompras;
+                    if (data.comprasHist)   AppState.comprasHist   = data.comprasHist;
+                    if (data.gastosRapidos) AppState.gastosRapidos = data.gastosRapidos;
                     saveState();
                     refreshAllUI();
                     renderHistoryTable();
                     renderGoalsGrid();
                     poblarSelectCats();
+                    renderSobres();
+                    renderDeudas();
+                    renderGastosRapidos();
+                    if (document.getElementById('compras-lista-items')) renderCompras();
                     toast('✅ Backup importado correctamente');
                     });
                 } catch(err) {
@@ -5984,6 +6032,7 @@ document.addEventListener("DOMContentLoaded",function(){
             document.documentElement.style.setProperty('--card-bg', cfg.cardBg);
             document.body.style.backgroundColor = cfg.bg;
             document.body.style.color = cfg.text;
+            document.body.classList.toggle('theme-light', br === 'light');
             // Cards
             document.querySelectorAll('.premium-glass').forEach(el => {
                 el.style.background = cfg.cardBg;
@@ -7625,7 +7674,7 @@ document.addEventListener("DOMContentLoaded",function(){
             }
             return AppState.listaCompras;
         }
-        function unidadLabel(u) { return { kg: 'kg', und: 'und', paq: 'paq', lt: 'L' }[u] || u; }
+        function unidadLabel(u) { return { kg: 'kg', und: 'und', paq: 'paq', lt: 'L', monto: 'monto' }[u] || u; }
         function pasoUnidad(u) { return (u === 'kg' || u === 'lt') ? 0.5 : 1; }
 
         function setComprasTab(tab) {
@@ -7644,7 +7693,7 @@ document.addEventListener("DOMContentLoaded",function(){
             // Totales
             let estimado = 0, comprado = 0, nComprados = 0;
             items.forEach(it => {
-                const sub = (parseFloat(it.precio) || 0) * (parseFloat(it.cantidad) || 0);
+                const sub = it.precio ? ((parseFloat(it.precio) || 0) * (parseFloat(it.cantidad) || 0)) : 0;
                 estimado += sub;
                 if (it.comprado) { comprado += sub; nComprados++; }
             });
@@ -7663,20 +7712,32 @@ document.addEventListener("DOMContentLoaded",function(){
                 cont.innerHTML = '<div style="text-align:center;padding:30px 16px;color:#475569;font-size:13px">🛒 Tu lista está vacía.<br>Agrega productos de tu biblioteca para empezar.</div>';
             } else {
                 cont.innerHTML = items.map(it => {
-                    const sub = ((parseFloat(it.precio) || 0) * (parseFloat(it.cantidad) || 0)).toFixed(2);
+                    const sub = (parseFloat(it.precio) || 0) * (parseFloat(it.cantidad) || 0);
                     const done = it.comprado;
+                    const esMonto = it.unidad === 'monto';
+                    const tienePrecio = !!it.precio;
+                    let lineaPrecio;
+                    if (!tienePrecio) {
+                        const ref = it.precioRef ? (' · ref: S/' + parseFloat(it.precioRef).toFixed(2)) : '';
+                        lineaPrecio = '<span style="color:#f59e0b;font-weight:700">Toca para poner el precio</span>' + ref;
+                    } else if (esMonto) {
+                        lineaPrecio = 'S/ ' + parseFloat(it.precio).toFixed(2) + ' (monto directo)';
+                    } else {
+                        lineaPrecio = 'S/ ' + parseFloat(it.precio).toFixed(2) + ' × ' + it.cantidad + ' ' + unidadLabel(it.unidad);
+                    }
+                    const steppers = esMonto ? '' : `
+                                <button onclick="cambiarCantidad('${it.id}',-1)" style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:800;cursor:pointer;font-size:13px;line-height:1">−</button>
+                                <button onclick="cambiarCantidad('${it.id}',1)" style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:800;cursor:pointer;font-size:13px;line-height:1">+</button>`;
                     return `
-                    <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:16px;background:${done ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.03)'};border:1px solid ${done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)'}">
+                    <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:16px;background:${done ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.03)'};border:1px solid ${done ? 'rgba(34,197,94,0.25)' : (tienePrecio ? 'rgba(255,255,255,0.06)' : 'rgba(245,158,11,0.25)')}">
                         <div onclick="toggleComprado('${it.id}')" style="width:26px;height:26px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;background:${done ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'rgba(255,255,255,0.05)'};border:1px solid ${done ? 'transparent' : 'rgba(255,255,255,0.15)'}">${done ? '✓' : ''}</div>
                         <div style="flex:1;min-width:0">
                             <div style="font-size:13px;font-weight:700;color:${done ? '#86efac' : '#f1f5f9'};${done ? 'text-decoration:line-through;opacity:.75' : ''}">${it.emoji || '🛒'} ${it.nombre}</div>
-                            <div onclick="abrirPrecioItem('${it.id}')" style="font-size:11px;color:#94a3b8;cursor:pointer;margin-top:2px">S/ ${parseFloat(it.precio).toFixed(2)} × ${it.cantidad} ${unidadLabel(it.unidad)} <span style="color:#475569">✏️</span></div>
+                            <div onclick="abrirPrecioItem('${it.id}')" style="font-size:11px;color:#94a3b8;cursor:pointer;margin-top:2px">${lineaPrecio} <span style="color:#475569">✏️</span></div>
                         </div>
                         <div style="text-align:right;flex-shrink:0">
-                            <div style="font-size:13px;font-weight:800;color:${done ? '#4ade80' : '#e2e8f0'}">S/ ${sub}</div>
-                            <div style="display:flex;gap:4px;margin-top:4px;align-items:center">
-                                <button onclick="cambiarCantidad('${it.id}',-1)" style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:800;cursor:pointer;font-size:13px;line-height:1">−</button>
-                                <button onclick="cambiarCantidad('${it.id}',1)" style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-weight:800;cursor:pointer;font-size:13px;line-height:1">+</button>
+                            <div style="font-size:13px;font-weight:800;color:${done ? '#4ade80' : '#e2e8f0'}">${tienePrecio ? 'S/ ' + sub.toFixed(2) : '—'}</div>
+                            <div style="display:flex;gap:4px;margin-top:4px;align-items:center">${steppers}
                                 <button onclick="quitarItemLista('${it.id}')" style="width:24px;height:24px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#f87171;cursor:pointer;font-size:11px;line-height:1">🗑</button>
                             </div>
                         </div>
@@ -7705,7 +7766,7 @@ document.addEventListener("DOMContentLoaded",function(){
                         <div style="font-size:22px;flex-shrink:0">${p.emoji || '📦'}</div>
                         <div style="flex:1;min-width:0" onclick="abrirEditarProducto('${p.id}')">
                             <div style="font-size:13px;font-weight:700;color:#f1f5f9">${p.nombre}</div>
-                            <div style="font-size:11px;color:#94a3b8;margin-top:2px">S/ ${parseFloat(p.precio).toFixed(2)} / ${unidadLabel(p.unidad)}${tendencia}${ultimo ? ' · act. ' + ultimo : ''}</div>
+                            <div style="font-size:11px;color:#94a3b8;margin-top:2px">${p.precio != null ? 'S/ ' + parseFloat(p.precio).toFixed(2) : 'sin precio aún'} / ${unidadLabel(p.unidad)}${tendencia}${ultimo ? ' · act. ' + ultimo : ''}</div>
                         </div>
                         <button onclick="agregarALista('${p.id}')" style="padding:8px 12px;border-radius:11px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-weight:800;font-size:12px;cursor:pointer;flex-shrink:0">+ Lista</button>
                     </div>`;
@@ -7767,6 +7828,7 @@ document.addEventListener("DOMContentLoaded",function(){
             document.getElementById('nuevo-prod-emoji').value = '';
             document.getElementById('nuevo-prod-nombre').value = '';
             document.getElementById('nuevo-prod-precio').value = '';
+            _renderEmojiPicker('nuevo-prod-emoji-picker', 'nuevo-prod-emoji');
             openModal('modal-agregar-producto');
             document.body.style.overflow = 'hidden';
         }
@@ -7774,17 +7836,22 @@ document.addEventListener("DOMContentLoaded",function(){
         function crearProducto() {
             const emoji  = document.getElementById('nuevo-prod-emoji').value.trim() || '📦';
             const nombre = document.getElementById('nuevo-prod-nombre').value.trim();
-            const precio = parseFloat(document.getElementById('nuevo-prod-precio').value);
+            const precioRaw = document.getElementById('nuevo-prod-precio').value.trim();
             const unidad = document.getElementById('nuevo-prod-unidad').value;
             if (!nombre) { toast('Ponle un nombre al producto', 'error'); return; }
-            if (isNaN(precio) || precio < 0) { toast('Ingresa un precio válido', 'error'); return; }
             if (getProductos().some(p => p.nombre.toLowerCase() === nombre.toLowerCase())) {
                 toast('Ya tienes "' + nombre + '" en tu biblioteca', 'error'); return;
+            }
+            let precio = null;
+            if (precioRaw !== '') {
+                const p = parseFloat(precioRaw);
+                if (isNaN(p) || p < 0) { toast('Precio inválido', 'error'); return; }
+                precio = p;
             }
             const prod = {
                 id: 'prod_' + Date.now(),
                 emoji, nombre, precio, unidad,
-                historialPrecios: [{ fecha: hoyISO(), precio: precio }]
+                historialPrecios: precio !== null ? [{ fecha: hoyISO(), precio: precio }] : []
             };
             AppState.productos.push(prod);
             if (_addDesde === 'lista') _agregarItemDeProducto(prod);
@@ -7798,14 +7865,17 @@ document.addEventListener("DOMContentLoaded",function(){
             const lista = getLista();
             const existente = lista.items.find(it => it.productoId === prod.id);
             if (existente) {
-                existente.cantidad = parseFloat((parseFloat(existente.cantidad) + pasoUnidad(prod.unidad)).toFixed(2));
+                if (prod.unidad !== 'monto') {
+                    existente.cantidad = parseFloat((parseFloat(existente.cantidad) + pasoUnidad(prod.unidad)).toFixed(2));
+                }
             } else {
                 lista.items.push({
                     id: 'item_' + Date.now() + '_' + Math.floor(Math.random() * 999),
                     productoId: prod.id,
                     nombre: prod.nombre, emoji: prod.emoji, unidad: prod.unidad,
-                    precio: prod.precio,
-                    cantidad: pasoUnidad(prod.unidad) === 0.5 ? 1 : 1,
+                    precio: null,          // se llena en el mercado — no lo dictamos
+                    precioRef: prod.precio, // solo como referencia visual
+                    cantidad: 1,
                     comprado: false
                 });
             }
@@ -7830,7 +7900,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         function cambiarCantidad(itemId, dir) {
             const it = getLista().items.find(i => i.id === itemId);
-            if (!it) return;
+            if (!it || it.unidad === 'monto') return;
             const paso = pasoUnidad(it.unidad);
             let nueva = parseFloat((parseFloat(it.cantidad) + dir * paso).toFixed(2));
             if (nueva < paso) nueva = paso;
@@ -7847,36 +7917,100 @@ document.addEventListener("DOMContentLoaded",function(){
         }
 
         // ── Precio de item (actualiza también biblioteca + historial) ──
+        let _modoPrecioItem = 'unitario';
+
         function abrirPrecioItem(itemId) {
             const it = getLista().items.find(i => i.id === itemId);
             if (!it) return;
             _itemPrecioId = itemId;
-            document.getElementById('precio-item-titulo').textContent = '💰 ' + (it.emoji || '') + ' ' + it.nombre + ' (por ' + unidadLabel(it.unidad) + ')';
-            document.getElementById('precio-item-input').value = parseFloat(it.precio).toFixed(2);
+            const esMonto = it.unidad === 'monto';
+
+            document.getElementById('precio-item-titulo').textContent = '💰 ' + (it.emoji || '') + ' ' + it.nombre;
+            document.getElementById('precio-item-cantidad-wrap').style.display = esMonto ? 'none' : '';
+            document.getElementById('precio-item-modo-wrap').style.display = esMonto ? 'none' : 'flex';
+            document.getElementById('precio-item-cantidad').value = it.cantidad;
+            document.getElementById('precio-item-unidad-label').textContent = unidadLabel(it.unidad);
+
+            _modoPrecioItem = esMonto ? 'total' : 'unitario';
+            _setModoPrecioItem(_modoPrecioItem, true);
+
+            if (esMonto) {
+                document.getElementById('precio-item-input-label').textContent = '¿Cuánto pagaste en total? (S/)';
+                document.getElementById('precio-item-input').value = it.precio ? parseFloat(it.precio).toFixed(2) : '';
+            } else if (it.precio) {
+                document.getElementById('precio-item-input').value = parseFloat(it.precio).toFixed(2);
+            } else {
+                document.getElementById('precio-item-input').value = '';
+            }
+
             openModal('modal-precio-item');
             document.body.style.overflow = 'hidden';
+            setTimeout(_actualizarPreviewItem, 50);
+        }
+
+        function _setModoPrecioItem(modo, silencioso) {
+            _modoPrecioItem = modo;
+            const btnU = document.getElementById('precio-item-modo-unitario');
+            const btnT = document.getElementById('precio-item-modo-total');
+            const activo = 'background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3);color:#4ade80';
+            const inactivo = 'background:transparent;border-color:transparent;color:#94a3b8';
+            btnU.style.cssText = btnU.style.cssText.replace(/background:[^;]*;border-color:[^;]*;color:[^;]*/, '') + (modo === 'unitario' ? activo : inactivo);
+            btnT.style.cssText = btnT.style.cssText.replace(/background:[^;]*;border-color:[^;]*;color:[^;]*/, '') + (modo === 'total' ? activo : inactivo);
+            const it = getLista().items.find(i => i.id === _itemPrecioId);
+            const unidadTxt = it ? unidadLabel(it.unidad) : 'unidad';
+            document.getElementById('precio-item-input-label').textContent =
+                modo === 'unitario' ? ('Precio por ' + unidadTxt + ' (S/)') : '¿Cuánto pagaste en total? (S/)';
+            if (!silencioso) _actualizarPreviewItem();
+        }
+
+        function _actualizarPreviewItem() {
+            const it = getLista().items.find(i => i.id === _itemPrecioId);
+            if (!it) return;
+            const esMonto = it.unidad === 'monto';
+            const cantidad = esMonto ? 1 : (parseFloat(document.getElementById('precio-item-cantidad').value) || 0);
+            const valor = parseFloat(document.getElementById('precio-item-input').value) || 0;
+            let total;
+            if (esMonto || _modoPrecioItem === 'total') total = valor;
+            else total = valor * cantidad;
+            document.getElementById('precio-item-preview').textContent = 'S/ ' + total.toFixed(2);
         }
 
         function guardarPrecioItem() {
-            const nuevo = parseFloat(document.getElementById('precio-item-input').value);
-            if (isNaN(nuevo) || nuevo < 0) { toast('Precio inválido', 'error'); return; }
             const it = getLista().items.find(i => i.id === _itemPrecioId);
             if (!it) return;
-            it.precio = nuevo;
+            const esMonto = it.unidad === 'monto';
+            const valor = parseFloat(document.getElementById('precio-item-input').value);
+            if (isNaN(valor) || valor < 0) { toast('Ingresa un valor válido', 'error'); return; }
+
+            let precioUnitario, cantidadFinal;
+            if (esMonto) {
+                cantidadFinal = 1;
+                precioUnitario = valor; // el "precio" ES el monto total para este tipo
+            } else {
+                cantidadFinal = parseFloat(document.getElementById('precio-item-cantidad').value);
+                if (isNaN(cantidadFinal) || cantidadFinal <= 0) { toast('Ingresa una cantidad válida', 'error'); return; }
+                precioUnitario = (_modoPrecioItem === 'total') ? (valor / cantidadFinal) : valor;
+            }
+
+            it.cantidad = parseFloat(cantidadFinal.toFixed(2));
+            it.precio = parseFloat(precioUnitario.toFixed(4));
+
             const prod = getProductos().find(p => p.id === it.productoId);
             if (prod) {
-                prod.precio = nuevo;
+                const precioRedondeado = parseFloat(precioUnitario.toFixed(2));
+                prod.precio = precioRedondeado;
                 prod.historialPrecios = prod.historialPrecios || [];
                 const hoy = hoyISO();
                 const ult = prod.historialPrecios[prod.historialPrecios.length - 1];
-                if (ult && ult.fecha === hoy) ult.precio = nuevo;
-                else prod.historialPrecios.push({ fecha: hoy, precio: nuevo });
+                if (ult && ult.fecha === hoy) ult.precio = precioRedondeado;
+                else prod.historialPrecios.push({ fecha: hoy, precio: precioRedondeado });
                 if (prod.historialPrecios.length > 30) prod.historialPrecios = prod.historialPrecios.slice(-30);
             }
             saveState();
             cerrarModalCompras('modal-precio-item');
             setTimeout(renderCompras, 80);
-            toast('✅ Precio actualizado a S/ ' + nuevo.toFixed(2));
+            const totalPagado = esMonto ? precioUnitario : (precioUnitario * cantidadFinal);
+            toast('✅ Guardado — S/ ' + totalPagado.toFixed(2));
         }
 
         // ── Editar producto (biblioteca) ──
@@ -7887,7 +8021,7 @@ document.addEventListener("DOMContentLoaded",function(){
             document.getElementById('edit-prod-titulo').textContent = '📦 ' + p.nombre;
             document.getElementById('edit-prod-emoji').value = p.emoji || '';
             document.getElementById('edit-prod-nombre').value = p.nombre;
-            document.getElementById('edit-prod-precio').value = parseFloat(p.precio).toFixed(2);
+            document.getElementById('edit-prod-precio').value = p.precio != null ? parseFloat(p.precio).toFixed(2) : '';
             document.getElementById('edit-prod-unidad').value = p.unidad || 'und';
             const hist = (p.historialPrecios || []).slice(-8).reverse();
             document.getElementById('edit-prod-historial').innerHTML = hist.length === 0 ? '' :
@@ -7902,6 +8036,7 @@ document.addEventListener("DOMContentLoaded",function(){
                     }
                     return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:#94a3b8"><span>${hh.fecha}</span><span style="font-weight:700;color:#e2e8f0">S/ ${parseFloat(hh.precio).toFixed(2)}${flecha}</span></div>`;
                 }).join('') + '</div>';
+            _renderEmojiPicker('edit-prod-emoji-picker', 'edit-prod-emoji');
             openModal('modal-editar-producto');
             document.body.style.overflow = 'hidden';
         }
@@ -7910,13 +8045,18 @@ document.addEventListener("DOMContentLoaded",function(){
             const p = getProductos().find(x => x.id === _prodEditandoId);
             if (!p) return;
             const nombre = document.getElementById('edit-prod-nombre').value.trim();
-            const precio = parseFloat(document.getElementById('edit-prod-precio').value);
+            const precioRaw = document.getElementById('edit-prod-precio').value.trim();
             if (!nombre) { toast('El nombre no puede quedar vacío', 'error'); return; }
-            if (isNaN(precio) || precio < 0) { toast('Precio inválido', 'error'); return; }
+            let precio = null;
+            if (precioRaw !== '') {
+                const pv = parseFloat(precioRaw);
+                if (isNaN(pv) || pv < 0) { toast('Precio inválido', 'error'); return; }
+                precio = pv;
+            }
             p.emoji = document.getElementById('edit-prod-emoji').value.trim() || '📦';
             p.nombre = nombre;
             p.unidad = document.getElementById('edit-prod-unidad').value;
-            if (parseFloat(p.precio) !== precio) {
+            if (precio !== null && parseFloat(p.precio) !== precio) {
                 p.historialPrecios = p.historialPrecios || [];
                 const hoy = hoyISO();
                 const ult = p.historialPrecios[p.historialPrecios.length - 1];
@@ -7924,8 +8064,10 @@ document.addEventListener("DOMContentLoaded",function(){
                 else p.historialPrecios.push({ fecha: hoy, precio: precio });
             }
             p.precio = precio;
+            // Solo sincroniza nombre/emoji/unidad/referencia en items de la lista —
+            // NO pisa el precio ya puesto en el mercado (o dejado en blanco a propósito)
             getLista().items.forEach(it => {
-                if (it.productoId === p.id) { it.nombre = p.nombre; it.emoji = p.emoji; it.unidad = p.unidad; it.precio = p.precio; }
+                if (it.productoId === p.id) { it.nombre = p.nombre; it.emoji = p.emoji; it.unidad = p.unidad; it.precioRef = p.precio; }
             });
             saveState();
             cerrarModalCompras('modal-editar-producto');
@@ -8128,6 +8270,20 @@ document.addEventListener("DOMContentLoaded",function(){
             _renderGestorRapidos();
             renderGastosRapidos();
             toast('Gasto rápido eliminado');
+        }
+
+
+        // ══════════════════════════════════════════════════════════════════
+        // PICKER RÁPIDO DE EMOJIS (evita tener que escribir el emoji a mano)
+        // ══════════════════════════════════════════════════════════════════
+        const EMOJIS_RAPIDOS = ['🍗','🍚','🥩','🐟','🥚','🥛','🧀','🍞','🧄','🧅','🥔','🍅','🥕','🥬','🌿','🍌','🍎','🧻','🧴','🧼','🛢️','🍬','☕','🍫','📦'];
+
+        function _renderEmojiPicker(pickerId, inputId) {
+            const el = document.getElementById(pickerId);
+            if (!el) return;
+            el.innerHTML = EMOJIS_RAPIDOS.map(e =>
+                `<button type="button" onclick="document.getElementById('${inputId}').value='${e}'" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">${e}</button>`
+            ).join('');
         }
 
         function initApp() {
