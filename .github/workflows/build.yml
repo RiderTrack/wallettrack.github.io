@@ -118,17 +118,35 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Generate keystore
+      # ── Restaura el keystore permanente (o lo genera la primera vez) ──
+      # Mientras KEYSTORE_BASE64 no cambie, todas las firmas futuras son
+      # IDÉNTICAS → Android instala encima sin pedir desinstalar → no se
+      # pierden tus datos (localStorage) al actualizar.
+      - name: Restore or generate keystore
         run: |
-          keytool -genkeypair \
-            -keystore debug.keystore \
-            -alias wallettrack \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass wallettrack123 \
-            -keypass wallettrack123 \
-            -dname "CN=WalletTrack, OU=Dev, O=WalletTrack, L=Lima, S=Lima, C=PE"
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "✅ Usando keystore guardado en Secrets"
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          else
+            echo "⚠️ No hay KEYSTORE_BASE64 — generando uno nuevo (guárdalo después como Secret)"
+            keytool -genkeypair \
+              -keystore release.keystore \
+              -alias wallettrack \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass wallettrack123 \
+              -keypass wallettrack123 \
+              -dname "CN=WalletTrack, OU=Dev, O=WalletTrack, L=Lima, S=Lima, C=PE"
+            echo ""
+            echo "══════════════════════════════════════════════"
+            echo "COPIA ESTE BASE64 Y GUÁRDALO EN GITHUB SECRETS"
+            echo "Nombre del secret: KEYSTORE_BASE64"
+            echo "══════════════════════════════════════════════"
+            base64 -w 0 release.keystore
+            echo ""
+            echo "══════════════════════════════════════════════"
+          fi
 
       - name: Zipalign APK
         run: |
@@ -138,7 +156,7 @@ jobs:
       - name: Sign APK
         run: |
           APKSIGNER=$(find $ANDROID_SDK_ROOT -name "apksigner" | head -1)
-          $APKSIGNER sign --ks debug.keystore --ks-key-alias wallettrack --ks-pass pass:wallettrack123 --key-pass pass:wallettrack123 --out WalletTrack-v1.0.apk WalletTrack-aligned.apk
+          $APKSIGNER sign --ks release.keystore --ks-key-alias wallettrack --ks-pass pass:wallettrack123 --key-pass pass:wallettrack123 --out WalletTrack-v1.0.apk WalletTrack-aligned.apk
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
